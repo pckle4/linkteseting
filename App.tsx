@@ -183,8 +183,6 @@ const App: React.FC = () => {
                  <a href="#privacy" className="text-slate-500 hover:text-indigo-500 transition-colors">Privacy Policy</a>
                  <span className="text-slate-300 dark:text-slate-700">•</span>
                  <a href="#terms" className="text-slate-500 hover:text-indigo-500 transition-colors">Terms of Service</a>
-                 <span className="text-slate-300 dark:text-slate-700">•</span>
-                 <a href="#info" className="text-slate-500 hover:text-indigo-500 transition-colors">Documentation</a>
              </div>
 
              <a href="https://nowhile.com" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold tracking-widest uppercase text-slate-400/60 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 cursor-pointer">
