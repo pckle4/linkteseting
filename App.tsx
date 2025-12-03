@@ -5,8 +5,9 @@ import { Technology } from './components/Technology';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsOfService } from './components/TermsOfService';
 import { Info } from './components/Info';
+import { DownloadPage } from './components/Download';
 import { ToastContainer } from './components/Toast';
-import { Sun, Moon, Clock, Cpu, Github, MessageCircle } from 'lucide-react';
+import { Sun, Moon, Clock, Cpu, Github, MessageCircle, FileText } from 'lucide-react';
 import { cn } from './utils';
 
 const FooterClock = memo(() => {
@@ -27,7 +28,7 @@ const FooterClock = memo(() => {
   );
 });
 
-type ViewState = 'home' | 'technology' | 'privacy' | 'terms' | 'info';
+type ViewState = 'home' | 'technology' | 'privacy' | 'terms' | 'info' | 'download';
 
 const App: React.FC = () => {
   const [hostId, setHostId] = useState<string | null>(null);
@@ -60,6 +61,7 @@ const App: React.FC = () => {
         else if (hash === 'privacy') { setView('privacy'); setHostId(null); window.scrollTo(0, 0); }
         else if (hash === 'terms') { setView('terms'); setHostId(null); window.scrollTo(0, 0); }
         else if (hash === 'info') { setView('info'); setHostId(null); window.scrollTo(0, 0); }
+        else if (hash === 'download') { setView('download'); setHostId(null); window.scrollTo(0, 0); }
         else {
             setView('home');
             (!hash || hash === 'home') ? setHostId(null) : setHostId(hash);
@@ -139,6 +141,9 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
+              <a href="https://nowhile.com/resume" target="_blank" rel="noopener noreferrer" className={headerBtnClass} title="Resume">
+                  <FileText size={scrolled ? 16 : 18} />
+              </a>
               <a href="https://github.com/nowhile" target="_blank" rel="noopener noreferrer" className={headerBtnClass} title="Star on GitHub">
                   <Github size={scrolled ? 16 : 18} />
               </a>
@@ -160,6 +165,7 @@ const App: React.FC = () => {
          {view === 'privacy' && <PrivacyPolicy onBack={navigateHome} />}
          {view === 'terms' && <TermsOfService onBack={navigateHome} />}
          {view === 'info' && <Info onBack={navigateHome} />}
+         {view === 'download' && <DownloadPage onBack={navigateHome} />}
          {view === 'home' && (hostId ? <Receiver hostId={hostId} /> : <Sender onToast={addToast} />)}
       </main>
       
@@ -183,6 +189,8 @@ const App: React.FC = () => {
                  <a href="#privacy" className="text-slate-500 hover:text-indigo-500 transition-colors">Privacy Policy</a>
                  <span className="text-slate-300 dark:text-slate-700">•</span>
                  <a href="#terms" className="text-slate-500 hover:text-indigo-500 transition-colors">Terms of Service</a>
+                 <span className="text-slate-300 dark:text-slate-700">•</span>
+                 <a href="https://nowhile.com/resume" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-500 transition-colors">Resume</a>
              </div>
 
              <a href="https://nowhile.com" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold tracking-widest uppercase text-slate-400/60 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-300 cursor-pointer">
