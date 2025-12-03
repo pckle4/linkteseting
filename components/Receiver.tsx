@@ -29,7 +29,7 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
   
   const filesRef = useRef<FileMeta[]>([]);
   const currentFileIdRef = useRef<string | null>(null);
-  const chunksRef = useRef<ArrayBuffer[]>([]);
+  const chunksRef = useRef<(ArrayBuffer | ArrayBufferView | Blob)[]>([]);
   const receivedBytesRef = useRef(0);
   const expectedSizeRef = useRef(0);
   const lastTickBytesRef = useRef(0);
@@ -75,9 +75,10 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
         const fileId = currentFileIdRef.current;
         if (!fileId) return;
 
-        const blob = new Blob(chunksRef.current);
-        const url = URL.createObjectURL(blob);
         const fileMeta = filesRef.current.find(f => f.id === fileId);
+        // Use the correct MIME type from metadata
+        const blob = new Blob(chunksRef.current, { type: fileMeta?.type || 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
         
         if (fileMeta) {
             const a = document.createElement('a');
@@ -86,7 +87,7 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
         setDownloadStates(prev => ({
@@ -104,21 +105,37 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
         processQueue();
     };
 
+    // CRITICAL FIX: Removed async/await to prevent race conditions with incoming chunks
     const handleIncomingData = (event: IncomingData) => {
+        const data = event.data;
+
         // Handle Binary Data (File Chunks)
-        if (event.data instanceof ArrayBuffer) {
+        const isBinary = data instanceof ArrayBuffer || ArrayBuffer.isView(data) || data instanceof Blob;
+
+        if (isBinary) {
             if (!currentFileIdRef.current) return;
             
-            chunksRef.current.push(event.data);
-            receivedBytesRef.current += event.data.byteLength;
+            // Push data synchronously to preserve order.
+            // Do NOT use await here as it causes out-of-order processing for fast streams.
+            chunksRef.current.push(data as any);
+            
+            // Calculate size synchronously
+            let chunkSize = 0;
+            if (data instanceof Blob) {
+                chunkSize = data.size;
+            } else if ((data as any).byteLength !== undefined) {
+                chunkSize = (data as any).byteLength; 
+            }
+
+            receivedBytesRef.current += chunkSize;
             
             const now = Date.now();
-            if (now - lastTickTimeRef.current > 500) {
+            if (now - lastTickTimeRef.current > 100) { // Update UI every 100ms for smoothness
                  const bytesReceived = receivedBytesRef.current;
                  const speed = (bytesReceived - lastTickBytesRef.current) / ((now - lastTickTimeRef.current) / 1000);
-                 const progress = Math.min(100, (bytesReceived / expectedSizeRef.current) * 100);
-                 const remainingBytes = expectedSizeRef.current - bytesReceived;
-                 const timeRemaining = speed > 0 ? (remainingBytes / speed) * 1000 : 0;
+                 const progress = expectedSizeRef.current > 0 ? Math.min(100, (bytesReceived / expectedSizeRef.current) * 100) : 0;
+                 const remainingBytes = Math.max(0, expectedSizeRef.current - bytesReceived);
+                 const timeRemaining = speed > 0 ? (remainingBytes / speed) : 0;
                  
                  setDownloadStates(prev => ({
                      ...prev,
@@ -127,6 +144,11 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
 
                  lastTickTimeRef.current = now;
                  lastTickBytesRef.current = bytesReceived;
+            }
+
+            // Auto-finalize if we hit the expected size
+            if (expectedSizeRef.current > 0 && receivedBytesRef.current >= expectedSizeRef.current) {
+                finalizeCurrentFile();
             }
             return;
         }
@@ -155,8 +177,13 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
                 ...prev,
                 [id]: { ...prev[id], status: 'downloading', progress: 0, speed: 0, timeRemaining: 0 }
             }));
+            // Handle 0-byte files immediately
+            if (size === 0) finalizeCurrentFile();
         } else if (msg.type === 'END_FILE') {
-            finalizeCurrentFile();
+            // Only finalize if we haven't already (via the size check)
+            if (currentFileIdRef.current === msg.payload.fileId) {
+                finalizeCurrentFile();
+            }
         } else if (msg.type === 'TEXT') {
             setTextMessages(prev => [...prev, { id: Math.random().toString(36), text: msg.payload.text, sender: 'peer', timestamp: Date.now() }]);
         } else if (msg.type === 'PING') {
@@ -177,7 +204,7 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
             await peerService.initialize();
             
             setConnectionStep(2); // Handshake
-            // Fix: Append prefix to match Sender's ID format
+            // Append prefix to match Sender's ID format
             peerService.connect(`nwshare-${hostId}`);
             
             peerService.on('connection', (conn) => {
@@ -430,7 +457,7 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
                                               {isDownloading && (
                                                   <>
                                                       <span className="flex items-center gap-1"><Activity size={10} /> {formatSpeed(state.speed)}</span>
-                                                      <span className="flex items-center gap-1"><RefreshCw size={10} className="animate-spin" /> {formatDuration(state.timeRemaining / 1000)} left</span>
+                                                      <span className="flex items-center gap-1"><RefreshCw size={10} className="animate-spin" /> {formatDuration(state.timeRemaining)} left</span>
                                                   </>
                                               )}
                                               {isCompleted && <span className="text-emerald-500 font-bold flex items-center gap-1"><Check size={12} /> Complete</span>}
