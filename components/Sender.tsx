@@ -9,7 +9,8 @@ import { IncomingData, ProtocolMessage, TextMessage } from '../types';
 import QRCode from 'qrcode';
 
 const SILENT_AUDIO_URL = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-const CHUNK_SIZE = 64 * 1024;
+// Reduced chunk size to 16KB to prevent buffer overflows and improve reliability
+const CHUNK_SIZE = 16 * 1024;
 
 interface SenderProps {
   onToast: (msg: string, type: 'success' | 'error' | 'info') => void;
@@ -136,7 +137,8 @@ export const Sender: React.FC<SenderProps> = ({ onToast }) => {
               bytesSinceLastTick += buffer.byteLength;
               
               const now = Date.now();
-              if (now - lastTick > 500) {
+              // Update UI every 100ms for smoother progress
+              if (now - lastTick > 100) {
                    const pct = Math.round((offset / totalSize) * 100);
                    setCurrentSpeed(bytesSinceLastTick / ((now - lastTick) / 1000));
                    updateTransferState(connId, fileId, { progress: pct });
@@ -272,7 +274,7 @@ export const Sender: React.FC<SenderProps> = ({ onToast }) => {
       }
   };
 
-  const getTotalDownloads = () => Object.values(fileStats).reduce((acc, curr) => acc + (curr as FileStats).downloads, 0);
+  const getTotalDownloads = () => Object.values(fileStats).reduce((acc: number, curr) => acc + (curr as FileStats).downloads, 0);
   const isNearExpiry = timeRemaining < 5 * 60 * 1000;
   
   const limit = isUnlimitedDownloads ? Infinity : Number(downloadLimit);
