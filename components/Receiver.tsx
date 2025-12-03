@@ -21,6 +21,7 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
   const [verifying, setVerifying] = useState(false);
   
   // New Features
+  const [activeTab, setActiveTab] = useState<'files' | 'text'>('files');
   const [textMessages, setTextMessages] = useState<TextMessage[]>([]);
   const [textInput, setTextInput] = useState('');
   const [latency, setLatency] = useState<number | null>(null);
@@ -36,9 +37,15 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
   const hostConnectionIdRef = useRef<string | null>(null);
   const downloadQueueRef = useRef<string[]>([]);
   const isProcessingQueueRef = useRef(false);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { if (chatBottomRef.current) chatBottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, [textMessages]);
+  // Auto-scroll chat container only, not the window
+  useEffect(() => {
+    if (chatContainerRef.current) {
+        const { scrollHeight, clientHeight } = chatContainerRef.current;
+        chatContainerRef.current.scrollTo({ top: scrollHeight - clientHeight, behavior: 'smooth' });
+    }
+  }, [textMessages]);
 
   useEffect(() => {
     let mounted = true;
@@ -53,189 +60,201 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
             filesRef.current = payload.files;
             setDownloadStates(prev => {
                 const next = { ...prev };
-                payload.files!.forEach(f => { if (!next[f.id]) next[f.id] = { status: 'pending', progress: 0, speed: 0, timeRemaining: 0 }; });
+                payload.files!.forEach(f => {
+                    if (!next[f.id]) {
+                        next[f.id] = { status: 'pending', progress: 0, speed: 0, timeRemaining: 0 };
+                    }
+                });
                 return next;
             });
             setConnectionStatus('connected');
-            setLocked(false);
         }
     };
 
     const finalizeCurrentFile = () => {
         const fileId = currentFileIdRef.current;
         if (!fileId) return;
+
+        const blob = new Blob(chunksRef.current);
+        const url = URL.createObjectURL(blob);
         const fileMeta = filesRef.current.find(f => f.id === fileId);
-        if (!fileMeta) { setDownloadStates(prev => ({ ...prev, [fileId]: { ...prev[fileId], status: 'failed' } })); return; }
-        try {
-            const blob = new Blob(chunksRef.current, { type: fileMeta.type });
-            const url = URL.createObjectURL(blob);
+        
+        if (fileMeta) {
             const a = document.createElement('a');
-            a.href = url; a.download = fileMeta.name;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            setDownloadStates(prev => ({ ...prev, [fileId]: { ...prev[fileId], status: 'completed', progress: 100 } }));
-        } catch (e) { setDownloadStates(prev => ({ ...prev, [fileId]: { ...prev[fileId], status: 'failed' } })); }
-        chunksRef.current = []; receivedBytesRef.current = 0; expectedSizeRef.current = 0; currentFileIdRef.current = null;
-        if (downloadQueueRef.current.length > 0) {
-            const nextId = downloadQueueRef.current.shift();
-            if (nextId) setTimeout(() => sendRequest(nextId), 200);
-        } else { isProcessingQueueRef.current = false; }
+            a.href = url;
+            a.download = fileMeta.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        setDownloadStates(prev => ({
+            ...prev,
+            [fileId]: { ...prev[fileId], status: 'completed', progress: 100, speed: 0, timeRemaining: 0 }
+        }));
+
+        // Reset for next file
+        currentFileIdRef.current = null;
+        chunksRef.current = [];
+        receivedBytesRef.current = 0;
+        
+        // Process next in queue
+        isProcessingQueueRef.current = false;
+        processQueue();
     };
 
-    const handleIncomingData = async (data: any) => {
-        if (data instanceof ArrayBuffer || data instanceof Uint8Array || data instanceof Blob) {
-            const buffer = data instanceof Blob ? await data.arrayBuffer() : (data instanceof Uint8Array ? data.buffer : data);
-            if (currentFileIdRef.current) {
-                 chunksRef.current.push(buffer);
-                 receivedBytesRef.current += buffer.byteLength;
-                 if (expectedSizeRef.current > 0 && receivedBytesRef.current >= expectedSizeRef.current) finalizeCurrentFile();
+    const handleIncomingData = (event: IncomingData) => {
+        // Handle Binary Data (File Chunks)
+        if (event.data instanceof ArrayBuffer) {
+            if (!currentFileIdRef.current) return;
+            
+            chunksRef.current.push(event.data);
+            receivedBytesRef.current += event.data.byteLength;
+            
+            const now = Date.now();
+            if (now - lastTickTimeRef.current > 500) {
+                 const bytesReceived = receivedBytesRef.current;
+                 const speed = (bytesReceived - lastTickBytesRef.current) / ((now - lastTickTimeRef.current) / 1000);
+                 const progress = Math.min(100, (bytesReceived / expectedSizeRef.current) * 100);
+                 const remainingBytes = expectedSizeRef.current - bytesReceived;
+                 const timeRemaining = speed > 0 ? (remainingBytes / speed) * 1000 : 0;
+                 
+                 setDownloadStates(prev => ({
+                     ...prev,
+                     [currentFileIdRef.current!]: { ...prev[currentFileIdRef.current!], status: 'downloading', progress, speed, timeRemaining }
+                 }));
+
+                 lastTickTimeRef.current = now;
+                 lastTickBytesRef.current = bytesReceived;
             }
             return;
         }
-        const msg = data as ProtocolMessage;
-        if (msg.type === 'MANIFEST') handleManifest(msg.payload);
-        else if (msg.type === 'PASSWORD_CORRECT') { setVerifying(false); setLocked(false); setPasswordError(false); }
-        else if (msg.type === 'PASSWORD_INCORRECT') { setVerifying(false); setPasswordError(true); }
-        else if (msg.type === 'START_FILE') {
-            const fileId = msg.payload.id;
-            currentFileIdRef.current = fileId; expectedSizeRef.current = msg.payload.size; chunksRef.current = []; receivedBytesRef.current = 0; lastTickTimeRef.current = Date.now();
-            setDownloadStates(prev => ({ ...prev, [fileId]: { ...prev[fileId], status: 'downloading', progress: 0 } }));
-            if (msg.payload.size === 0) finalizeCurrentFile();
-        }
-        else if (msg.type === 'END_FILE') { if (currentFileIdRef.current === msg.payload.fileId) finalizeCurrentFile(); }
-        else if (msg.type === 'TEXT') {
-             setTextMessages(prev => [...prev, { id: Math.random().toString(36), text: msg.payload.text, sender: 'peer', timestamp: Date.now() }]);
-        }
-        else if (msg.type === 'PONG') {
-            const rtt = Date.now() - msg.payload.ts;
-            setLatency(rtt);
-        }
-        else if (msg.type === 'PING') {
-             peerService.sendTo(hostConnectionIdRef.current!, { type: 'PONG', payload: msg.payload });
-        }
-        else if (msg.type === 'NUDGE') {
+
+        // Handle Protocol Messages
+        const msg = event.data as ProtocolMessage;
+        
+        if (msg.type === 'MANIFEST') {
+            handleManifest(msg.payload);
+        } else if (msg.type === 'PASSWORD_CORRECT') {
+            setLocked(false);
+            setVerifying(false);
+            setPasswordError(false);
+        } else if (msg.type === 'PASSWORD_INCORRECT') {
+            setVerifying(false);
+            setPasswordError(true);
+        } else if (msg.type === 'START_FILE') {
+            const { id, size } = msg.payload;
+            currentFileIdRef.current = id;
+            expectedSizeRef.current = size;
+            receivedBytesRef.current = 0;
+            chunksRef.current = [];
+            lastTickTimeRef.current = Date.now();
+            lastTickBytesRef.current = 0;
+            setDownloadStates(prev => ({
+                ...prev,
+                [id]: { ...prev[id], status: 'downloading', progress: 0, speed: 0, timeRemaining: 0 }
+            }));
+        } else if (msg.type === 'END_FILE') {
+            finalizeCurrentFile();
+        } else if (msg.type === 'TEXT') {
+            setTextMessages(prev => [...prev, { id: Math.random().toString(36), text: msg.payload.text, sender: 'peer', timestamp: Date.now() }]);
+        } else if (msg.type === 'PING') {
+             peerService.sendTo(event.connectionId, { type: 'PONG', payload: msg.payload });
+        } else if (msg.type === 'PONG') {
+             const rtt = Date.now() - msg.payload.ts;
+             setLatency(rtt);
+        } else if (msg.type === 'NUDGE') {
              setIsNudged(true);
              setTimeout(() => setIsNudged(false), 500);
              if ('vibrate' in navigator) navigator.vibrate(200);
         }
     };
 
-    const onStatus = (s: any) => {
-        if (!mounted) return;
-        if (s.status === 'ready') setConnectionStep(1); // Peer ID ready
-        else if (s.status === 'connected') { 
-            if (s.connectionId) hostConnectionIdRef.current = s.connectionId; 
-            clearTimeout(connectionTimeout); 
-            setConnectionStep(3);
-            // Start Ping Loop
-            pingInterval = setInterval(() => {
-                if (hostConnectionIdRef.current) {
-                    peerService.sendTo(hostConnectionIdRef.current, { type: 'PING', payload: { ts: Date.now() } });
-                }
-            }, 2000);
-        }
-        else if (s.status === 'disconnected') { if (!hostConnectionIdRef.current || s.connectionId === hostConnectionIdRef.current) setConnectionStatus('disconnected'); }
-    };
-
-    const onError = (err: any) => {
-        if (mounted) { 
-            if (err.type === 'peer-unavailable' || err.message?.includes('Could not connect to peer')) setConnectionStatus('disconnected'); 
-        }
-    };
-
-    const onData = (event: IncomingData) => {
-        if (mounted) handleIncomingData(event.data);
-    };
-
-    const init = async () => {
+    const connectToHost = async () => {
         try {
-            const peerIdToConnect = hostId.startsWith('nwshare-') ? hostId : `nwshare-${hostId}`;
+            setConnectionStep(1); // Lookup
             await peerService.initialize();
             
-            // Simulate visual steps
-            setTimeout(() => { if(mounted) setConnectionStep(1); }, 300);
+            setConnectionStep(2); // Handshake
+            peerService.connect(hostId);
             
-            peerService.on('status', onStatus);
-            peerService.on('error', onError);
-            peerService.on('data', onData);
+            peerService.on('connection', (conn) => {
+                hostConnectionIdRef.current = conn.connectionId;
+                setConnectionStep(3); // Connected (Waiting for manifest)
+                
+                // Start Ping Loop
+                pingInterval = setInterval(() => {
+                    if (peerService.getLatency(conn.connectionId)) {
+                        peerService.sendTo(conn.connectionId, { type: 'PING', payload: { ts: Date.now() } });
+                    }
+                }, 2000);
+            });
+
+            peerService.on('data', handleIncomingData);
             
-            // Connect
-            setTimeout(() => {
-                if(mounted) {
-                    setConnectionStep(2);
-                    peerService.connect(peerIdToConnect);
+            peerService.on('error', (err) => {
+                console.error("Peer error:", err);
+                setConnectionStatus('disconnected');
+            });
+
+            peerService.on('status', (status) => {
+                if (status.status === 'disconnected') {
+                     setConnectionStatus('disconnected');
                 }
-            }, 800);
+            });
 
-            connectionTimeout = setTimeout(() => { if (mounted && connectionStatus === 'connecting') setConnectionStatus('disconnected'); }, 15000);
-        } catch (e) { if (mounted) setConnectionStatus('disconnected'); }
-    };
-    init();
-
-    const statsInterval = setInterval(() => {
-        const fileId = currentFileIdRef.current;
-        if (!fileId) return;
-        const fileMeta = filesRef.current.find(f => f.id === fileId);
-        if (!fileMeta) return;
-        const now = Date.now(), totalReceived = receivedBytesRef.current, totalSize = fileMeta.size;
-        const pct = totalSize > 0 ? Math.min(100, (totalReceived / totalSize) * 100) : 0;
-        const timeDiff = (now - lastTickTimeRef.current) / 1000;
-        let speed = 0, timeRemaining = 0;
-        if (timeDiff > 0.5) {
-             const bytesDiff = totalReceived - lastTickBytesRef.current;
-             speed = bytesDiff / timeDiff;
-             timeRemaining = speed > 0 ? (totalSize - totalReceived) / speed : 0;
-             lastTickBytesRef.current = totalReceived; lastTickTimeRef.current = now;
+        } catch (e) {
+            console.error("Connection failed", e);
+            setConnectionStatus('disconnected');
         }
-        setDownloadStates(prev => ({ ...prev, [fileId]: { ...prev[fileId], progress: pct, speed: speed || prev[fileId]?.speed || 0, timeRemaining: timeRemaining || prev[fileId]?.timeRemaining || 0 } }));
-    }, 200);
+    };
 
-    return () => { 
-        mounted = false; 
-        clearInterval(statsInterval); 
+    connectToHost();
+
+    return () => {
+        mounted = false;
         clearInterval(pingInterval);
-        clearTimeout(connectionTimeout); 
-        peerService.off('status', onStatus);
-        peerService.off('error', onError);
-        peerService.off('data', onData);
-        peerService.destroy(); 
+        peerService.destroy();
     };
   }, [hostId]);
 
-  const sendRequest = (fileId: string) => {
+  const verifyPassword = () => {
       if (!hostConnectionIdRef.current) return;
-      peerService.sendTo(hostConnectionIdRef.current, { type: 'REQUEST_FILE', payload: { fileId } });
-  };
-  const startDownload = (fileId: string) => {
-      if (currentFileIdRef.current) {
-          if (!downloadQueueRef.current.includes(fileId)) {
-              downloadQueueRef.current.push(fileId);
-              setDownloadStates(prev => ({ ...prev, [fileId]: { ...prev[fileId], status: 'pending' } }));
-          }
-          return;
-      }
-      sendRequest(fileId);
-  };
-  const downloadAll = () => {
-      const pending = files.filter(f => downloadStates[f.id]?.status !== 'completed').map(f => f.id);
-      if (pending.length === 0) return;
-      downloadQueueRef.current = [...pending];
-      isProcessingQueueRef.current = true;
-      setDownloadStates(prev => {
-          const next = {...prev};
-          pending.forEach(id => { if (next[id]) next[id] = { ...next[id], status: 'pending' }; });
-          return next;
-      });
-      if (!currentFileIdRef.current) {
-          const next = downloadQueueRef.current.shift();
-          if (next) sendRequest(next);
-      }
-  };
-  const verifyPassword = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!hostConnectionIdRef.current || !passwordInput.trim()) return;
       setVerifying(true);
-      peerService.sendTo(hostConnectionIdRef.current, { type: 'VERIFY_PASSWORD', payload: { password: passwordInput.trim() } });
+      peerService.sendTo(hostConnectionIdRef.current, { type: 'VERIFY_PASSWORD', payload: { password: passwordInput } });
+  };
+
+  const processQueue = () => {
+      if (isProcessingQueueRef.current || downloadQueueRef.current.length === 0 || !hostConnectionIdRef.current) return;
+      
+      const nextFileId = downloadQueueRef.current[0];
+      isProcessingQueueRef.current = true;
+      downloadQueueRef.current.shift(); // Remove from queue
+      
+      peerService.sendTo(hostConnectionIdRef.current, { type: 'REQUEST_FILE', payload: { fileId: nextFileId } });
+  };
+
+  const downloadFile = (fileId: string) => {
+      if (!hostConnectionIdRef.current) return;
+      
+      // If already downloading or queued, ignore
+      if (downloadStates[fileId]?.status === 'downloading' || downloadQueueRef.current.includes(fileId)) return;
+
+      downloadQueueRef.current.push(fileId);
+      setDownloadStates(prev => ({
+          ...prev,
+          [fileId]: { ...prev[fileId], status: 'pending' } // Just to show UI feedback if needed
+      }));
+      processQueue();
+  };
+  
+  const downloadAll = () => {
+      files.forEach(f => {
+          if (downloadStates[f.id]?.status !== 'completed' && downloadStates[f.id]?.status !== 'downloading') {
+              downloadFile(f.id);
+          }
+      });
   };
 
   const sendText = () => {
@@ -250,285 +269,232 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
       peerService.sendTo(hostConnectionIdRef.current, { type: 'NUDGE' });
   };
 
-  // --- CONNECTING STATE ---
-  if (connectionStatus === 'connecting') {
-      return (
-        <div className="w-full max-w-md mx-auto p-8 text-center animate-fade-in px-6">
-            <div className="mb-10 relative h-32 flex items-center justify-center">
-                 {/* Pulse Rings */}
-                 <div className="absolute inset-0 flex items-center justify-center">
-                     <div className="w-32 h-32 border-4 border-indigo-100 dark:border-indigo-900/30 rounded-full animate-[ping_3s_linear_infinite]" />
-                 </div>
-                 <div className="absolute inset-0 flex items-center justify-center">
-                     <div className="w-24 h-24 border-4 border-indigo-200 dark:border-indigo-800/50 rounded-full animate-[ping_3s_linear_infinite_1s]" />
-                 </div>
-                 
-                 {/* Central Icon */}
-                 <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-indigo-100 dark:border-slate-700 flex items-center justify-center relative z-10">
-                     <Wifi className="text-indigo-600 animate-pulse" size={32} />
-                 </div>
-            </div>
-
-            <div className="space-y-6 max-w-xs mx-auto">
-                <div className="flex items-center gap-4">
-                     <div className={cn("w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-500", connectionStep >= 1 ? "bg-emerald-500 text-white" : "bg-slate-200 dark:bg-slate-700")}>
-                         {connectionStep >= 1 ? <Check size={14} /> : <span className="text-xs">1</span>}
-                     </div>
-                     <span className={cn("text-sm font-medium transition-colors", connectionStep >= 1 ? "text-slate-900 dark:text-white" : "text-slate-400")}>Locating Peer</span>
-                </div>
-                <div className="flex items-center gap-4">
-                     <div className={cn("w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-500", connectionStep >= 2 ? "bg-emerald-500 text-white" : "bg-slate-200 dark:bg-slate-700")}>
-                         {connectionStep >= 2 ? <Check size={14} /> : <span className="text-xs">2</span>}
-                     </div>
-                     <span className={cn("text-sm font-medium transition-colors", connectionStep >= 2 ? "text-slate-900 dark:text-white" : "text-slate-400")}>Establishing Handshake</span>
-                </div>
-                <div className="flex items-center gap-4">
-                     <div className={cn("w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-500", connectionStep >= 3 ? "bg-emerald-500 text-white" : "bg-slate-200 dark:bg-slate-700")}>
-                         {connectionStep >= 3 ? <Check size={14} /> : <span className="text-xs">3</span>}
-                     </div>
-                     <span className={cn("text-sm font-medium transition-colors", connectionStep >= 3 ? "text-slate-900 dark:text-white" : "text-slate-400")}>Securing Tunnel</span>
-                </div>
-            </div>
-        </div>
-      );
-  }
-
-  // --- ERROR STATE ---
   if (connectionStatus === 'disconnected') {
       return (
-        <div className="w-full max-w-md mx-auto p-8 bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl text-center border border-slate-100 dark:border-slate-700 px-6 animate-slide-up">
-            <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertCircle size={40} className="text-red-500" />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Connection Lost</h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
-                The secure link may have expired, or the sender closed their browser tab.
-            </p>
-            
-            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-left mb-6 flex gap-3">
-                <Smartphone className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" size={20} />
-                <div className="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
-                    <strong>On Mobile?</strong> If the sender is on a phone, their screen must stay on. If they switched apps, the connection was likely paused.
-                </div>
-            </div>
-
-            <Button onClick={() => window.location.reload()} variant="primary" className="w-full py-4 text-base">Retry Connection</Button>
+        <div className="flex flex-col items-center justify-center p-12 text-center animate-fade-in">
+             <div className="w-24 h-24 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6 animate-bounce-small">
+                 <AlertCircle size={48} className="text-red-500" />
+             </div>
+             <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4">Connection Lost</h2>
+             <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md">The secure tunnel has been terminated or the host has gone offline.</p>
+             <Button onClick={() => window.location.reload()} className="shadow-xl shadow-red-500/20">
+                 <RefreshCw size={18} className="mr-2" /> Reconnect
+             </Button>
         </div>
       );
   }
 
-  // --- PASSWORD LOCKED STATE ---
+  if (connectionStatus === 'connecting' || (connectionStatus === 'connected' && files.length === 0 && !locked)) {
+      return (
+          <div className="flex flex-col items-center justify-center p-12 text-center max-w-lg mx-auto animate-fade-in">
+              <div className="relative mb-10">
+                  <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center relative z-10">
+                      <Loader2 size={40} className="text-indigo-600 dark:text-indigo-400 animate-spin" />
+                  </div>
+                  <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6">Establishing Secure Handshake</h2>
+              
+              <div className="w-full space-y-4">
+                  {[
+                      { step: 0, label: "Initializing cryptographic keys...", icon: KeyRound },
+                      { step: 1, label: "Looking up peer identity...", icon: Database },
+                      { step: 2, label: "Negotiating ICE candidates...", icon: Wifi },
+                      { step: 3, label: "Verifying DTLS certificates...", icon: ShieldCheck }
+                  ].map((s) => (
+                      <div key={s.step} className={cn("flex items-center gap-4 p-3 rounded-xl transition-all duration-500", connectionStep > s.step ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" : connectionStep === s.step ? "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg scale-105" : "opacity-40 grayscale")}>
+                          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", connectionStep > s.step ? "bg-emerald-100 dark:bg-emerald-900/30" : "bg-slate-100 dark:bg-slate-700")}>
+                              {connectionStep > s.step ? <Check size={16} /> : <s.icon size={16} />}
+                          </div>
+                          <span className="font-bold text-sm">{s.label}</span>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      );
+  }
+
   if (locked) {
       return (
-        <div className="w-full max-w-md mx-auto animate-fade-in px-4">
-            <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-700 p-8 text-center">
-                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                    <div className="absolute inset-0 rounded-full border border-indigo-100 dark:border-indigo-800 animate-ping opacity-20" />
-                    <Lock size={32} className="text-indigo-500 relative z-10" />
-                </div>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Password Protected</h2>
-                <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed">
-                    This transfer is end-to-end encrypted and password locked.
-                </p>
-                <form onSubmit={verifyPassword} className="space-y-4">
-                    <div className="relative group">
-                        <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
-                        <input 
-                            type="password" 
-                            value={passwordInput} 
-                            onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }} 
-                            placeholder="Enter Password" 
-                            className={cn(
-                                "w-full bg-slate-50 dark:bg-slate-900 border rounded-2xl pl-12 pr-4 py-4 outline-none transition-all font-bold text-slate-800 dark:text-white placeholder:text-slate-400", 
-                                passwordError ? "border-red-500 focus:ring-4 ring-red-500/10" : "border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-4 ring-indigo-500/10"
-                            )} 
-                            autoFocus 
-                        />
-                    </div>
-                    {passwordError && (
-                        <div className="flex items-center gap-2 text-red-500 text-xs font-bold animate-pulse justify-center">
-                            <AlertCircle size={12} /> Incorrect password.
-                        </div>
+          <div className="flex flex-col items-center justify-center p-8 animate-fade-in max-w-md mx-auto">
+              <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-[2rem] flex items-center justify-center mb-6 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-500/10">
+                  <Lock size={40} />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Session Locked</h2>
+              <p className="text-slate-500 dark:text-slate-400 mb-8 text-center">Enter the password provided by the host to access these files.</p>
+              
+              <div className="w-full relative mb-4">
+                  <input 
+                    type="password" 
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
+                    placeholder="Enter password..."
+                    className={cn(
+                        "w-full pl-5 pr-12 py-4 bg-white dark:bg-slate-800 border rounded-xl outline-none focus:ring-2 transition-all font-bold text-center tracking-widest",
+                        passwordError ? "border-red-300 focus:border-red-500 focus:ring-red-500/20 text-red-600" : "border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500/20"
                     )}
-                    <Button type="submit" disabled={verifying || !passwordInput} className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20">
-                        {verifying ? <Loader2 size={20} className="animate-spin" /> : <>Unlock Files <ArrowRight size={20} /></>}
-                    </Button>
-                </form>
-            </div>
-        </div>
+                    autoFocus
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      {verifying && <Loader2 size={20} className="animate-spin text-indigo-500" />}
+                  </div>
+              </div>
+              {passwordError && <p className="text-red-500 text-sm font-bold mb-4 animate-shake">Incorrect password</p>}
+              <Button onClick={verifyPassword} disabled={!passwordInput || verifying} className="w-full py-4 text-lg">
+                  Unlock Files <ArrowRight size={20} className="ml-2" />
+              </Button>
+          </div>
       );
   }
 
-  // --- CONNECTED / FILES STATE ---
   return (
-    <div className={cn("w-full max-w-2xl mx-auto animate-fade-in px-4 pb-24", isNudged && "animate-shake")}>
-        <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider shadow-sm border border-emerald-200 dark:border-emerald-800">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_currentColor]" />
-                Secure Tunnel Active
-            </div>
-            
-            <div className="flex items-center gap-3">
-                 {latency && (
-                     <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-500 border border-slate-200 dark:border-slate-700">
-                         <Activity size={12} className="text-indigo-500" />
-                         {latency}ms
-                     </div>
-                 )}
-                 <button onClick={sendNudge} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-500 transition-colors" title="Nudge Host">
-                     <Bell size={18} />
-                 </button>
-            </div>
-        </div>
+    <div className={cn("w-full max-w-3xl mx-auto animate-slide-up pb-20 px-4", isNudged && "animate-shake")}>
+      
+      {/* Header Card */}
+      <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700 p-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-100 dark:border-slate-700/50 pb-4">
+              <div className="flex items-center gap-3">
+                   <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                       <Smartphone size={24} />
+                   </div>
+                   <div>
+                       <h1 className="text-xl font-black text-slate-900 dark:text-white leading-tight">Connected to Peer</h1>
+                       <div className="flex items-center gap-2 mt-1">
+                           <span className="flex items-center gap-1 text-xs font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full"><Wifi size={10} /> Secure</span>
+                           {latency && <span className="text-xs text-slate-400 font-mono">{latency}ms ping</span>}
+                       </div>
+                   </div>
+              </div>
+              <div className="flex gap-2">
+                   <Button onClick={sendNudge} variant="ghost" className="px-3 rounded-xl bg-slate-100 dark:bg-slate-700" title="Nudge Host">
+                       <Bell size={18} />
+                   </Button>
+              </div>
+          </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden relative">
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-20" />
-            
-            <div className="p-8 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 backdrop-blur-sm">
-                <div>
-                    <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-1">Incoming Files</h2>
-                    <p className="text-sm text-slate-500 font-medium flex items-center gap-2">
-                        <Database size={14} /> {files.length} items • {formatFileSize(files.reduce((a,b)=>a+b.size,0))} total
-                    </p>
-                </div>
-                {files.length > 1 && (
-                    <Button onClick={downloadAll} className="hidden md:flex bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 px-6 py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-all text-sm gap-2 whitespace-nowrap">
-                        <DownloadCloud size={18} /> Download All
-                    </Button>
-                )}
-            </div>
-            
-            <div className="p-4 space-y-3 bg-white dark:bg-slate-800 min-h-[300px]">
-                {files.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 opacity-50">
-                        <Loader2 size={30} className="text-indigo-500 animate-spin mb-3" />
-                        <p className="text-sm font-medium">Waiting for host to add files...</p>
-                    </div>
-                ) : (
-                    files.map(file => {
-                        const state = downloadStates[file.id] || { status: 'pending', progress: 0 };
-                        const theme = getFileTheme(file.name, file.type);
-                        const isDownloading = state.status === 'downloading';
-                        const isCompleted = state.status === 'completed';
-                        
-                        return (
-                            <div 
-                                key={file.id} 
-                                className={cn(
-                                    "group relative overflow-hidden p-4 rounded-2xl border transition-all duration-300",
-                                    theme.bg, theme.border, theme.hover,
-                                    isDownloading ? "shadow-lg scale-[1.01] ring-1 ring-indigo-500/20 z-10" : "hover:shadow-md"
-                                )}
-                            >
-                                {/* Progress Background */}
-                                {isDownloading && (
-                                    <div className="absolute inset-0 bg-indigo-500/5 pointer-events-none transition-all duration-300" style={{ width: `${state.progress}%` }} />
-                                )}
-                                
-                                <div className="relative flex items-center gap-4">
-                                    {/* Icon Container */}
-                                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border shrink-0 bg-white dark:bg-slate-800 transition-transform group-hover:scale-110 duration-500", theme.border, theme.accent)}>
-                                        <FileIcon fileName={file.name} fileType={file.type} className="w-7 h-7" />
-                                    </div>
-                                    
-                                    <div className="flex-1 min-w-0 py-1">
-                                        <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight truncate pr-2" title={file.name}>{file.name}</h3>
-                                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700/50">
-                                                {formatFileSize(file.size)}
-                                            </span>
-                                            
-                                            {isDownloading && (
-                                                <>
-                                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 animate-pulse">{formatSpeed(state.speed)}</span>
-                                                    <span className="text-[10px] text-slate-400">• {formatDuration(state.timeRemaining)} left</span>
-                                                </>
-                                            )}
-                                            {isCompleted && (
-                                                 <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                                     <Check size={10} strokeWidth={4} /> Saved
-                                                 </span>
-                                            )}
-                                        </div>
-                                    </div>
+          {/* Tabs */}
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-900/50 rounded-xl mb-6">
+              <button 
+                onClick={() => setActiveTab('files')}
+                className={cn("flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2", activeTab === 'files' ? "bg-white dark:bg-slate-800 shadow text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+              >
+                  <Server size={16} /> Files ({files.length})
+              </button>
+              <button 
+                onClick={() => setActiveTab('text')}
+                className={cn("flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2", activeTab === 'text' ? "bg-white dark:bg-slate-800 shadow text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+              >
+                  <MessageSquare size={16} /> Text Stream
+              </button>
+          </div>
 
-                                    <div className="shrink-0 z-10">
-                                        {state.status === 'pending' || state.status === 'failed' ? (
-                                            <button 
-                                                onClick={() => startDownload(file.id)} 
-                                                className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-all active:scale-90 hover:-translate-y-0.5", theme.progress)} 
-                                                title="Download"
-                                            >
-                                                <Download size={20} strokeWidth={2.5} />
-                                            </button>
-                                        ) : state.status === 'downloading' ? (
-                                            <div className="w-10 h-10 flex items-center justify-center">
-                                                <Loader2 size={24} className="text-indigo-600 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            <button 
-                                                onClick={() => startDownload(file.id)} 
-                                                className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-all active:scale-95 group/check" 
-                                                title="Download again"
-                                            >
-                                                <Check size={20} strokeWidth={3} className="group-hover/check:hidden" />
-                                                <RefreshCw size={18} strokeWidth={2.5} className="hidden group-hover/check:block" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
-            
-            {/* Sticky Mobile Download All */}
-            {files.length > 1 && (
-                <div className="p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl md:hidden border-t border-slate-100 dark:border-slate-700 sticky bottom-0 z-20 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-                     <Button onClick={downloadAll} className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-all text-base gap-2">
-                        <DownloadCloud size={20} /> Download All Files
-                     </Button>
-                </div>
-            )}
-        </div>
+          {activeTab === 'files' ? (
+              <div className="space-y-4">
+                  <div className="flex justify-end mb-2">
+                      <button onClick={downloadAll} className="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1">
+                          <DownloadCloud size={14} /> Download All
+                      </button>
+                  </div>
+                  <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                      {files.map(file => {
+                          const state = downloadStates[file.id];
+                          const theme = getFileTheme(file.name, file.type);
+                          const isDownloading = state?.status === 'downloading';
+                          const isCompleted = state?.status === 'completed';
 
-        {/* Text Messaging Card */}
-        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden mt-6">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center gap-3">
-                 <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
-                     <MessageSquare size={20} />
-                 </div>
-                 <h3 className="font-bold text-slate-900 dark:text-white">Secure Text Stream</h3>
-            </div>
-            
-            <div className="p-4 bg-slate-50/50 dark:bg-slate-900/30">
-                 <div className="h-48 overflow-y-auto custom-scrollbar space-y-3 mb-4 p-2">
+                          return (
+                              <div key={file.id} className={cn("relative overflow-hidden bg-slate-50 dark:bg-slate-900/40 rounded-2xl border transition-all duration-300 group", theme.border, theme.hover)}>
+                                  {/* Progress Bar Background */}
+                                  {isDownloading && (
+                                      <div 
+                                          className={cn("absolute inset-0 opacity-10 transition-all duration-300", theme.progress)} 
+                                          style={{ width: `${state.progress}%` }} 
+                                      />
+                                  )}
+                                  
+                                  <div className="relative p-4 flex items-center gap-4">
+                                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border shadow-sm shrink-0", theme.bg, theme.border)}>
+                                          <FileIcon fileName={file.name} fileType={file.type} className="w-6 h-6" />
+                                      </div>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                          <div className="flex items-center justify-between mb-1">
+                                              <div className="font-bold text-slate-700 dark:text-slate-200 truncate pr-4">{file.name}</div>
+                                              {isDownloading && <span className="text-xs font-mono font-bold text-indigo-500">{state.progress.toFixed(0)}%</span>}
+                                          </div>
+                                          
+                                          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                              <span className="font-mono bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700/50">{formatFileSize(file.size)}</span>
+                                              {isDownloading && (
+                                                  <>
+                                                      <span className="flex items-center gap-1"><Activity size={10} /> {formatSpeed(state.speed)}</span>
+                                                      <span className="flex items-center gap-1"><RefreshCw size={10} className="animate-spin" /> {formatDuration(state.timeRemaining / 1000)} left</span>
+                                                  </>
+                                              )}
+                                              {isCompleted && <span className="text-emerald-500 font-bold flex items-center gap-1"><Check size={12} /> Complete</span>}
+                                          </div>
+                                      </div>
+
+                                      <div className="shrink-0">
+                                          {isCompleted ? (
+                                              <button onClick={() => downloadFile(file.id)} className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center hover:scale-110 transition-transform" title="Download Again">
+                                                  <RefreshCw size={18} />
+                                              </button>
+                                          ) : isDownloading ? (
+                                              <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                                                  <Loader2 size={20} className="text-indigo-600 animate-spin" />
+                                              </div>
+                                          ) : (
+                                              <button 
+                                                  onClick={() => downloadFile(file.id)}
+                                                  className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all flex items-center justify-center shadow-sm group-hover:scale-110"
+                                              >
+                                                  <Download size={20} />
+                                              </button>
+                                          )}
+                                      </div>
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
+              </div>
+          ) : (
+              <div className="flex flex-col h-[60vh]">
+                  <div ref={chatContainerRef} className="flex-1 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700/50 p-4 overflow-y-auto custom-scrollbar space-y-3 mb-4">
                       {textMessages.length === 0 && (
-                          <div className="text-center text-slate-400 text-xs py-10 opacity-60">
-                              Use this space to send passwords or links securely.
+                          <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                              <MessageSquare size={32} className="mb-2" />
+                              <p className="text-xs">No messages yet. Chat securely.</p>
                           </div>
                       )}
                       {textMessages.map(msg => (
-                          <div key={msg.id} className={cn("max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm", msg.sender === 'self' ? "ml-auto bg-indigo-600 text-white rounded-tr-sm" : "mr-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-tl-sm")}>
+                          <div key={msg.id} className={cn("max-w-[85%] rounded-2xl px-4 py-2 text-sm", msg.sender === 'self' ? "ml-auto bg-indigo-600 text-white rounded-tr-sm" : "mr-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-tl-sm")}>
                               {msg.text}
                           </div>
                       ))}
-                      <div ref={chatBottomRef} />
-                 </div>
-                 <div className="flex gap-2">
+                  </div>
+                  <div className="flex gap-2">
                       <input 
                         type="text" 
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && sendText()}
                         placeholder="Type a secure message..."
-                        className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm outline-none focus:border-indigo-500 focus:ring-2 ring-indigo-500/10"
+                        className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 ring-indigo-500/10 shadow-sm"
                       />
-                      <Button onClick={sendText} className="px-4 rounded-xl"><Send size={16} /></Button>
-                 </div>
-            </div>
-        </div>
+                      <Button onClick={sendText} className="px-5 rounded-xl"><Send size={18} /></Button>
+                  </div>
+              </div>
+          )}
+      </div>
+      
+      <div className="text-center">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+             Your connection is end-to-end encrypted. Files are transferred directly from the host.
+          </p>
+      </div>
     </div>
   );
 };
