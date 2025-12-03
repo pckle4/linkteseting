@@ -23,75 +23,78 @@ const ArchitectureDiagram = () => {
     }, []);
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden min-h-[400px] flex flex-col items-center justify-center group">
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 relative min-h-[400px] flex flex-col items-center justify-center group w-full overflow-hidden">
             {/* Background Grid */}
             <div className="absolute inset-0 opacity-[0.03]" 
                 style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
             />
             
-            <div className="relative z-10 w-full max-w-2xl">
-                {/* Nodes */}
-                <div className="flex justify-between items-end mb-12 relative">
-                    {/* Peer A */}
-                    <div className="flex flex-col items-center gap-4 z-20">
-                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 shadow-xl bg-white dark:bg-slate-800", step === 0 ? "border-indigo-500 scale-110 shadow-indigo-500/20" : "border-slate-200 dark:border-slate-700")}>
-                            <MonitorIcon className={step === 0 ? "text-indigo-500" : "text-slate-400"} />
+            <div className="relative z-10 w-full max-w-2xl overflow-x-auto pb-4">
+                <div className="min-w-[500px] px-4">
+                    {/* Nodes */}
+                    <div className="flex justify-between items-end mb-12 relative">
+                        {/* Peer A */}
+                        <div className="flex flex-col items-center gap-4 z-20">
+                            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 shadow-xl bg-white dark:bg-slate-800", step === 0 ? "border-indigo-500 scale-110 shadow-indigo-500/20" : "border-slate-200 dark:border-slate-700")}>
+                                <MonitorIcon className={step === 0 ? "text-indigo-500" : "text-slate-400"} />
+                            </div>
+                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300">Sender (Peer A)</div>
                         </div>
-                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">Sender (Peer A)</div>
+
+                        {/* Signaling Server (Top Center) */}
+                        <div className="absolute left-1/2 -top-24 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
+                            <div className={cn("w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-500 bg-white dark:bg-slate-800", step === 1 ? "border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-110" : "border-slate-200 dark:border-slate-700")}>
+                                <Server size={20} className={step === 1 ? "text-amber-500" : "text-slate-400"} />
+                            </div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">Broker</div>
+                        </div>
+
+                        {/* Peer B */}
+                        <div className="flex flex-col items-center gap-4 z-20">
+                            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 shadow-xl bg-white dark:bg-slate-800", step === 2 ? "border-emerald-500 scale-110 shadow-emerald-500/20" : "border-slate-200 dark:border-slate-700")}>
+                                <MonitorIcon className={step === 2 ? "text-emerald-500" : "text-slate-400"} />
+                            </div>
+                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300">Receiver (Peer B)</div>
+                        </div>
+
+                        {/* Signaling Lines */}
+                        <svg className="absolute inset-0 w-full h-full -top-12 pointer-events-none overflow-visible">
+                            <path 
+                                d="M 50 30 Q 150 -60 300 -60" 
+                                fill="none" 
+                                stroke={step === 1 ? "#f59e0b" : "#cbd5e1"} 
+                                strokeWidth="2" 
+                                strokeDasharray="5,5"
+                                className={cn("transition-colors duration-500", step === 1 && "animate-pulse")}
+                            />
+                            <path 
+                                d="M 550 30 Q 450 -60 300 -60" 
+                                fill="none" 
+                                stroke={step === 1 ? "#f59e0b" : "#cbd5e1"} 
+                                strokeWidth="2" 
+                                strokeDasharray="5,5"
+                                className={cn("transition-colors duration-500", step === 1 && "animate-pulse")}
+                            />
+                        </svg>
                     </div>
 
-                    {/* Signaling Server (Top Center) */}
-                    <div className="absolute left-1/2 -top-24 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
-                         <div className={cn("w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-500 bg-white dark:bg-slate-800", step === 1 ? "border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-110" : "border-slate-200 dark:border-slate-700")}>
-                            <Server size={20} className={step === 1 ? "text-amber-500" : "text-slate-400"} />
-                        </div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">Broker</div>
+                    {/* Direct Connection Pipe */}
+                    <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-full relative overflow-hidden mt-8 shadow-inner">
+                        <div className={cn(
+                            "absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 transition-opacity duration-500",
+                            step === 3 ? "opacity-100 animate-shimmer" : "opacity-0"
+                        )} />
+                        {/* Data Packets */}
+                        {step === 3 && (
+                            <>
+                                <div className="absolute top-1 left-0 w-2 h-2 rounded-full bg-white shadow animate-packet" />
+                                <div className="absolute top-1 left-0 w-2 h-2 rounded-full bg-white shadow animate-packet" style={{ animationDelay: '0.5s' }} />
+                                <div className="absolute top-1 left-0 w-2 h-2 rounded-full bg-white shadow animate-packet" style={{ animationDelay: '1s' }} />
+                            </>
+                        )}
                     </div>
-
-                    {/* Peer B */}
-                    <div className="flex flex-col items-center gap-4 z-20">
-                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 shadow-xl bg-white dark:bg-slate-800", step === 2 ? "border-emerald-500 scale-110 shadow-emerald-500/20" : "border-slate-200 dark:border-slate-700")}>
-                            <MonitorIcon className={step === 2 ? "text-emerald-500" : "text-slate-400"} />
-                        </div>
-                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">Receiver (Peer B)</div>
-                    </div>
-
-                    {/* Signaling Lines */}
-                    <svg className="absolute inset-0 w-full h-full -top-12 pointer-events-none overflow-visible">
-                        <path 
-                            d="M 50 30 Q 150 -60 300 -60" 
-                            fill="none" 
-                            stroke={step === 1 ? "#f59e0b" : "#cbd5e1"} 
-                            strokeWidth="2" 
-                            strokeDasharray="5,5"
-                            className={cn("transition-colors duration-500", step === 1 && "animate-pulse")}
-                        />
-                        <path 
-                            d="M 550 30 Q 450 -60 300 -60" 
-                            fill="none" 
-                            stroke={step === 1 ? "#f59e0b" : "#cbd5e1"} 
-                            strokeWidth="2" 
-                            strokeDasharray="5,5"
-                            className={cn("transition-colors duration-500", step === 1 && "animate-pulse")}
-                        />
-                    </svg>
                 </div>
-
-                {/* Direct Connection Pipe */}
-                <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-full relative overflow-hidden mt-8 shadow-inner">
-                     <div className={cn(
-                         "absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 transition-opacity duration-500",
-                         step === 3 ? "opacity-100 animate-shimmer" : "opacity-0"
-                     )} />
-                     {/* Data Packets */}
-                     {step === 3 && (
-                         <>
-                            <div className="absolute top-1 left-0 w-2 h-2 rounded-full bg-white shadow animate-packet" />
-                            <div className="absolute top-1 left-0 w-2 h-2 rounded-full bg-white shadow animate-packet" style={{ animationDelay: '0.5s' }} />
-                            <div className="absolute top-1 left-0 w-2 h-2 rounded-full bg-white shadow animate-packet" style={{ animationDelay: '1s' }} />
-                         </>
-                     )}
-                </div>
+                
                 <div className="text-center mt-4">
                     <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                         {step === 0 && "Step 1: Init"}
@@ -114,47 +117,49 @@ const ArchitectureDiagram = () => {
 // 2. Handshake Sequence Diagram
 const HandshakeSequence = () => {
     return (
-        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 text-white font-mono text-xs relative overflow-hidden">
-             <div className="flex justify-between mb-4 border-b border-slate-700 pb-2">
-                 <span className="text-indigo-400">HOST</span>
-                 <span className="text-slate-500">SIGNALING SERVER</span>
-                 <span className="text-emerald-400">PEER</span>
-             </div>
-             
-             <div className="space-y-4 relative">
-                 {/* Line */}
-                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2" />
-                 
-                 <div className="flex justify-between items-center group">
-                     <div className="w-1/3 text-right pr-4"><span className="bg-indigo-900/50 px-2 py-1 rounded text-indigo-300 border border-indigo-500/30">Connect</span></div>
-                     <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
-                     <div className="w-1/3 pl-4 opacity-50">...</div>
-                 </div>
+        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 text-white font-mono text-xs relative overflow-x-auto">
+             <div className="min-w-[400px]">
+                <div className="flex justify-between mb-4 border-b border-slate-700 pb-2">
+                    <span className="text-indigo-400">HOST</span>
+                    <span className="text-slate-500">SIGNALING SERVER</span>
+                    <span className="text-emerald-400">PEER</span>
+                </div>
+                
+                <div className="space-y-4 relative">
+                    {/* Line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2" />
+                    
+                    <div className="flex justify-between items-center group">
+                        <div className="w-1/3 text-right pr-4"><span className="bg-indigo-900/50 px-2 py-1 rounded text-indigo-300 border border-indigo-500/30">Connect</span></div>
+                        <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
+                        <div className="w-1/3 pl-4 opacity-50">...</div>
+                    </div>
 
-                 <div className="flex justify-between items-center group">
-                     <div className="w-1/3 text-right pr-4 opacity-50">...</div>
-                     <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
-                     <div className="w-1/3 pl-4"><span className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 border border-emerald-500/30">Connect</span></div>
-                 </div>
+                    <div className="flex justify-between items-center group">
+                        <div className="w-1/3 text-right pr-4 opacity-50">...</div>
+                        <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
+                        <div className="w-1/3 pl-4"><span className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 border border-emerald-500/30">Connect</span></div>
+                    </div>
 
-                 <div className="flex justify-between items-center relative group">
-                     <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-indigo-500/50" />
-                     <div className="w-1/3 text-right pr-4"><span className="text-amber-400">OFFER (SDP)</span> &rarr;</div>
-                     <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-amber-500 rounded-full mx-auto animate-pulse" /></div>
-                     <div className="w-1/3 pl-4 opacity-50">&rarr;</div>
-                 </div>
+                    <div className="flex justify-between items-center relative group">
+                        <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-indigo-500/50" />
+                        <div className="w-1/3 text-right pr-4"><span className="text-amber-400">OFFER (SDP)</span> &rarr;</div>
+                        <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-amber-500 rounded-full mx-auto animate-pulse" /></div>
+                        <div className="w-1/3 pl-4 opacity-50">&rarr;</div>
+                    </div>
 
-                 <div className="flex justify-between items-center relative group">
-                     <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-emerald-500/50" />
-                     <div className="w-1/3 text-right pr-4 opacity-50">&larr;</div>
-                     <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-emerald-500 rounded-full mx-auto animate-pulse" /></div>
-                     <div className="w-1/3 pl-4">&larr; <span className="text-amber-400">ANSWER (SDP)</span></div>
-                 </div>
+                    <div className="flex justify-between items-center relative group">
+                        <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-emerald-500/50" />
+                        <div className="w-1/3 text-right pr-4 opacity-50">&larr;</div>
+                        <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-emerald-500 rounded-full mx-auto animate-pulse" /></div>
+                        <div className="w-1/3 pl-4">&larr; <span className="text-amber-400">ANSWER (SDP)</span></div>
+                    </div>
 
-                 <div className="flex justify-center py-4">
-                     <span className="bg-slate-800 border border-slate-600 px-3 py-1 rounded-full text-xs font-bold text-slate-300">P2P ESTABLISHED</span>
-                 </div>
-             </div>
+                    <div className="flex justify-center py-4">
+                        <span className="bg-slate-800 border border-slate-600 px-3 py-1 rounded-full text-xs font-bold text-slate-300">P2P ESTABLISHED</span>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
@@ -215,19 +220,19 @@ const ChunkingSimulator = () => {
                 {/* Visualizer */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex items-center justify-center relative shadow-inner">
+                        <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex items-center justify-center relative shadow-inner shrink-0">
                             <FileCode className="text-slate-500" />
                             <div className="absolute -bottom-6 text-[10px] font-mono text-slate-500">SOURCE</div>
                         </div>
                         
                         {/* Stream Animation */}
-                        <div className="flex-1 h-12 bg-slate-800/50 rounded-lg border border-slate-700/50 relative overflow-hidden flex items-center px-2 gap-2 shadow-inner">
+                        <div className="flex-1 h-12 bg-slate-800/50 rounded-lg border border-slate-700/50 relative overflow-hidden flex items-center px-2 gap-2 shadow-inner min-w-[100px]">
                              {chunks.map((_, i) => (
                                  <div key={i} className="w-6 h-8 bg-indigo-500 rounded shadow-lg animate-slide-right shrink-0" />
                              ))}
                         </div>
 
-                        <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex flex-col justify-end relative overflow-hidden shadow-inner">
+                        <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex flex-col justify-end relative overflow-hidden shadow-inner shrink-0">
                              <div 
                                 className={cn("w-full transition-all duration-200 opacity-80", getBufferColor(buffer))}
                                 style={{ height: `${buffer}%` }}
@@ -342,8 +347,8 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="w-full max-w-[1600px] mx-auto animate-fade-in flex flex-col lg:flex-row min-h-screen bg-slate-50 dark:bg-[#0B0F19]">
       
       {/* --- SIDEBAR NAVIGATION (Desktop) --- */}
-      <aside className="hidden lg:block w-72 shrink-0 relative">
-          <div className="sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm ml-6 my-6 flex flex-col">
+      <aside className="hidden lg:block w-72 shrink-0 relative self-start sticky top-28">
+          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm ml-6 my-6 flex flex-col">
              <div className="p-6">
                  <div className="flex items-center gap-2 font-black text-xl text-slate-900 dark:text-white tracking-tight mb-8">
                     <Terminal className="text-indigo-500" /> NW<span className="text-slate-400">Docs</span>
