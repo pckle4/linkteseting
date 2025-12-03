@@ -177,7 +177,8 @@ export const Receiver: React.FC<ReceiverProps> = ({ hostId }) => {
             await peerService.initialize();
             
             setConnectionStep(2); // Handshake
-            peerService.connect(hostId);
+            // Fix: Append prefix to match Sender's ID format
+            peerService.connect(`nwshare-${hostId}`);
             
             peerService.on('connection', (conn) => {
                 hostConnectionIdRef.current = conn.connectionId;
