@@ -59,12 +59,13 @@ export const Sender: React.FC<SenderProps> = ({ onToast }) => {
   const totalDownloadsRef = useRef<number>(0);
   const passwordRef = useRef('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { filesRef.current = hostedFiles; }, [hostedFiles]);
   useEffect(() => { activeTransfersRef.current = activeTransfers; }, [activeTransfers]);
   useEffect(() => { passwordRef.current = password; }, [password]);
-  useEffect(() => { if (chatBottomRef.current) chatBottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, [textMessages]);
+  
+  // Removed auto-scroll useEffect to prevent screen jumping
 
   useEffect(() => {
       setFileStats(prev => {
@@ -572,7 +573,7 @@ export const Sender: React.FC<SenderProps> = ({ onToast }) => {
               </div>
           ) : (
               <div className="flex flex-col h-60 mb-6 animate-fade-in">
-                  <div className="flex-1 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700/50 p-4 overflow-y-auto custom-scrollbar space-y-3">
+                  <div ref={chatContainerRef} className="flex-1 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700/50 p-4 overflow-y-auto custom-scrollbar space-y-3">
                       {textMessages.length === 0 && (
                           <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
                               <MessageSquare size={32} className="mb-2" />
@@ -584,7 +585,6 @@ export const Sender: React.FC<SenderProps> = ({ onToast }) => {
                               {msg.text}
                           </div>
                       ))}
-                      <div ref={chatBottomRef} />
                   </div>
                   <div className="mt-3 flex gap-2">
                       <input 
