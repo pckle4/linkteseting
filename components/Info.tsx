@@ -23,26 +23,27 @@ const ArchitectureDiagram = () => {
     }, []);
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-4 md:p-8 border border-slate-200 dark:border-slate-800 relative min-h-[400px] flex flex-col items-center justify-center group w-full overflow-hidden">
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 relative min-h-[350px] flex flex-col items-center justify-center group w-full overflow-hidden">
             {/* Background Grid */}
             <div className="absolute inset-0 opacity-[0.03]" 
                 style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
             />
             
             <div className="relative z-10 w-full overflow-x-auto pb-4 custom-scrollbar">
-                <div className="min-w-[500px] px-4 mx-auto">
+                {/* Fixed width container to ensure diagram integrity */}
+                <div className="min-w-[500px] md:min-w-[600px] px-8 mx-auto pt-12">
                     {/* Nodes */}
                     <div className="flex justify-between items-end mb-12 relative">
                         {/* Peer A */}
-                        <div className="flex flex-col items-center gap-4 z-20">
+                        <div className="flex flex-col items-center gap-4 z-20 w-24">
                             <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 shadow-xl bg-white dark:bg-slate-800", step === 0 ? "border-indigo-500 scale-110 shadow-indigo-500/20" : "border-slate-200 dark:border-slate-700")}>
                                 <MonitorIcon className={step === 0 ? "text-indigo-500" : "text-slate-400"} />
                             </div>
-                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300">Sender (Peer A)</div>
+                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300 text-center">Sender</div>
                         </div>
 
                         {/* Signaling Server (Top Center) */}
-                        <div className="absolute left-1/2 -top-24 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
+                        <div className="absolute left-1/2 -top-24 -translate-x-1/2 flex flex-col items-center gap-2 z-10 w-32">
                             <div className={cn("w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-500 bg-white dark:bg-slate-800", step === 1 ? "border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-110" : "border-slate-200 dark:border-slate-700")}>
                                 <Server size={20} className={step === 1 ? "text-amber-500" : "text-slate-400"} />
                             </div>
@@ -50,17 +51,17 @@ const ArchitectureDiagram = () => {
                         </div>
 
                         {/* Peer B */}
-                        <div className="flex flex-col items-center gap-4 z-20">
+                        <div className="flex flex-col items-center gap-4 z-20 w-24">
                             <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 shadow-xl bg-white dark:bg-slate-800", step === 2 ? "border-emerald-500 scale-110 shadow-emerald-500/20" : "border-slate-200 dark:border-slate-700")}>
                                 <MonitorIcon className={step === 2 ? "text-emerald-500" : "text-slate-400"} />
                             </div>
-                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300">Receiver (Peer B)</div>
+                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300 text-center">Receiver</div>
                         </div>
 
                         {/* Signaling Lines */}
-                        <svg className="absolute inset-0 w-full h-full -top-12 pointer-events-none overflow-visible">
+                        <svg className="absolute inset-0 w-full h-full -top-12 pointer-events-none overflow-visible" viewBox="0 0 600 200" preserveAspectRatio="none">
                             <path 
-                                d="M 50 30 Q 150 -60 300 -60" 
+                                d="M 50 30 Q 300 -80 300 -60" 
                                 fill="none" 
                                 stroke={step === 1 ? "#f59e0b" : "#cbd5e1"} 
                                 strokeWidth="2" 
@@ -68,7 +69,7 @@ const ArchitectureDiagram = () => {
                                 className={cn("transition-colors duration-500", step === 1 && "animate-pulse")}
                             />
                             <path 
-                                d="M 550 30 Q 450 -60 300 -60" 
+                                d="M 550 30 Q 300 -80 300 -60" 
                                 fill="none" 
                                 stroke={step === 1 ? "#f59e0b" : "#cbd5e1"} 
                                 strokeWidth="2" 
@@ -79,7 +80,7 @@ const ArchitectureDiagram = () => {
                     </div>
 
                     {/* Direct Connection Pipe */}
-                    <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-full relative overflow-hidden mt-8 shadow-inner">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-full relative overflow-hidden mt-8 shadow-inner mx-8">
                         <div className={cn(
                             "absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 transition-opacity duration-500",
                             step === 3 ? "opacity-100 animate-shimmer" : "opacity-0"
@@ -95,7 +96,7 @@ const ArchitectureDiagram = () => {
                     </div>
                 </div>
                 
-                <div className="text-center mt-6 w-full px-4">
+                <div className="text-center mt-6 w-full px-4 min-w-[300px]">
                     <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                         {step === 0 && "Step 1: Init"}
                         {step === 1 && "Step 2: Signaling (SDP Exchange)"}
@@ -117,13 +118,13 @@ const ArchitectureDiagram = () => {
 // 2. Handshake Sequence Diagram
 const HandshakeSequence = () => {
     return (
-        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 text-white font-mono text-xs relative overflow-hidden group">
+        <div className="bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-800 text-white font-mono text-xs relative overflow-hidden group">
             <div className="overflow-x-auto custom-scrollbar pb-2">
                  <div className="min-w-[400px]">
                     <div className="flex justify-between mb-4 border-b border-slate-700 pb-2">
-                        <span className="text-indigo-400">HOST</span>
-                        <span className="text-slate-500">SIGNALING SERVER</span>
-                        <span className="text-emerald-400">PEER</span>
+                        <span className="text-indigo-400 font-bold">HOST</span>
+                        <span className="text-slate-500 font-bold">SIGNALING</span>
+                        <span className="text-emerald-400 font-bold">PEER</span>
                     </div>
                     
                     <div className="space-y-4 relative">
@@ -144,7 +145,7 @@ const HandshakeSequence = () => {
 
                         <div className="flex justify-between items-center relative group">
                             <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-indigo-500/50" />
-                            <div className="w-1/3 text-right pr-4"><span className="text-amber-400">OFFER (SDP)</span> &rarr;</div>
+                            <div className="w-1/3 text-right pr-4"><span className="text-amber-400 font-bold">OFFER</span> &rarr;</div>
                             <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-amber-500 rounded-full mx-auto animate-pulse" /></div>
                             <div className="w-1/3 pl-4 opacity-50">&rarr;</div>
                         </div>
@@ -153,7 +154,7 @@ const HandshakeSequence = () => {
                             <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-emerald-500/50" />
                             <div className="w-1/3 text-right pr-4 opacity-50">&larr;</div>
                             <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-emerald-500 rounded-full mx-auto animate-pulse" /></div>
-                            <div className="w-1/3 pl-4">&larr; <span className="text-amber-400">ANSWER (SDP)</span></div>
+                            <div className="w-1/3 pl-4">&larr; <span className="text-amber-400 font-bold">ANSWER</span></div>
                         </div>
 
                         <div className="flex justify-center py-4">
@@ -204,16 +205,16 @@ const ChunkingSimulator = () => {
     };
 
     return (
-        <div className="bg-slate-900 text-white rounded-3xl p-6 md:p-8 border border-slate-800 shadow-2xl group hover:border-slate-700 transition-colors">
+        <div className="bg-slate-900 text-white rounded-3xl p-4 md:p-8 border border-slate-800 shadow-2xl group hover:border-slate-700 transition-colors w-full">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Cpu size={20} /></div>
-                    <div>
-                        <h3 className="font-bold">Chunking Engine</h3>
-                        <div className="text-[10px] text-slate-400 font-mono">SIMULATION_MODE: {isRunning ? 'ACTIVE' : 'IDLE'}</div>
+                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 shrink-0"><Cpu size={20} /></div>
+                    <div className="min-w-0">
+                        <h3 className="font-bold truncate">Chunking Engine</h3>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">MODE: {isRunning ? 'ACTIVE' : 'IDLE'}</div>
                     </div>
                 </div>
-                <button onClick={toggle} className="p-3 rounded-full bg-white text-slate-900 hover:bg-indigo-50 transition-colors transform active:scale-95">
+                <button onClick={toggle} className="p-3 rounded-full bg-white text-slate-900 hover:bg-indigo-50 transition-colors transform active:scale-95 shrink-0">
                     {isRunning ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
                 </button>
             </div>
@@ -221,14 +222,14 @@ const ChunkingSimulator = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 {/* Visualizer */}
                 <div className="space-y-6">
-                    <div className="flex items-center gap-4 overflow-x-auto custom-scrollbar pb-2">
+                    <div className="flex items-center gap-4 overflow-x-auto custom-scrollbar pb-4">
                         <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex items-center justify-center relative shadow-inner shrink-0">
                             <FileCode className="text-slate-500" />
                             <div className="absolute -bottom-6 text-[10px] font-mono text-slate-500">SOURCE</div>
                         </div>
                         
                         {/* Stream Animation */}
-                        <div className="flex-1 h-12 bg-slate-800/50 rounded-lg border border-slate-700/50 relative overflow-hidden flex items-center px-2 gap-2 shadow-inner min-w-[100px]">
+                        <div className="flex-1 h-12 bg-slate-800/50 rounded-lg border border-slate-700/50 relative overflow-hidden flex items-center px-2 gap-2 shadow-inner min-w-[120px]">
                              {chunks.map((_, i) => (
                                  <div key={i} className="w-6 h-8 bg-indigo-500 rounded shadow-lg animate-slide-right shrink-0" />
                              ))}
@@ -269,7 +270,7 @@ const ChunkingSimulator = () => {
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed">
-                <strong>How it works:</strong> The simulator yields execution when the simulated buffer exceeds 80%. In the real app, we check <code className="bg-slate-800 px-1 rounded text-indigo-300">conn.bufferedAmount</code> before reading the next slice from disk.
+                <strong>How it works:</strong> The simulator yields execution when the simulated buffer exceeds 80%. In the real app, we check <code className="bg-slate-800 px-1 rounded text-indigo-300">conn.bufferedAmount</code> before reading the next slice.
             </p>
         </div>
     );
@@ -280,14 +281,14 @@ const ChunkingSimulator = () => {
 const DocSection: React.FC<{ id: string; title: string; children: React.ReactNode }> = ({ id, title, children }) => (
     <section id={id} className="mb-16 scroll-mt-32">
         <div className="flex items-center gap-2 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
-            <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight break-words">{title}</h2>
         </div>
         {children}
     </section>
 );
 
 const CodeBlock: React.FC<{ code: string; label?: string }> = ({ code, label }) => (
-    <div className="my-6 rounded-xl overflow-hidden bg-[#0f172a] border border-slate-800 text-sm font-mono shadow-xl group hover:border-slate-700 transition-colors">
+    <div className="my-6 rounded-xl overflow-hidden bg-[#0f172a] border border-slate-800 text-sm font-mono shadow-xl group hover:border-slate-700 transition-colors w-full max-w-[90vw] md:max-w-none">
         {label && (
             <div className="px-4 py-2 bg-slate-800/50 border-b border-slate-800 text-xs text-slate-400 font-bold flex items-center gap-2">
                 <FileCode size={12} /> {label}
@@ -300,11 +301,11 @@ const CodeBlock: React.FC<{ code: string; label?: string }> = ({ code, label }) 
 );
 
 const ApiRow: React.FC<{ name: string; type: string; desc: string }> = ({ name, type, desc }) => (
-    <tr className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group flex flex-col md:table-row">
-        <td className="py-2 md:py-3 px-4 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform border-b md:border-b-0 border-slate-100 dark:border-slate-800/50 md:table-cell">{name}</td>
-        <td className="py-1 md:py-3 px-4 font-mono text-xs text-pink-600 dark:text-pink-400 whitespace-nowrap md:table-cell">{type}</td>
-        <td className="py-2 md:py-3 px-4 text-sm text-slate-600 dark:text-slate-400 md:table-cell pb-4 md:pb-3">{desc}</td>
-    </tr>
+    <div className="flex flex-col md:grid md:grid-cols-[1fr,auto,2fr] gap-2 md:gap-4 p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+        <div className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 break-words md:break-normal">{name}</div>
+        <div className="font-mono text-[10px] md:text-xs text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/10 px-2 py-0.5 rounded w-fit h-fit">{type}</div>
+        <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{desc}</div>
+    </div>
 );
 
 const MonitorIcon = ({ className }: { className?: string }) => (
@@ -429,7 +430,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           {/* 1. OVERVIEW */}
           <DocSection id="overview" title="Executive Summary">
               <div className="prose dark:prose-invert max-w-4xl text-slate-600 dark:text-slate-400 leading-relaxed">
-                  <p className="text-xl font-light text-slate-900 dark:text-white mb-6">
+                  <p className="text-lg md:text-xl font-light text-slate-900 dark:text-white mb-6">
                       NW Share is a <span className="font-semibold text-indigo-500">serverless, transient file transfer system</span> designed to bypass cloud storage limitations. It utilizes the WebRTC Data Channel standard to establish ephemeral, encrypted peer-to-peer tunnels directly between client browsers.
                   </p>
                   
@@ -520,7 +521,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 }`} 
                       />
                   </div>
-                  <div>
+                  <div className="w-full overflow-hidden">
                        <ChunkingSimulator />
                   </div>
               </div>
@@ -533,7 +534,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                      <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed">
                          The handshake process involves exchanging "Offers" and "Answers" that contain Session Description Protocol (SDP) data. This allows two browsers to agree on codecs, encryption keys, and network addresses before a direct line exists.
                      </p>
-                     <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+                     <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 w-full overflow-hidden">
                          <h4 className="font-bold text-sm mb-4">Payload Structure</h4>
                          <CodeBlock 
                              label="JSON Message Format" 
@@ -561,22 +562,16 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2"><Layout size={18} /> Sender.tsx</h3>
                           <span className="text-[10px] font-mono bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 px-2 py-1 rounded">Host Logic</span>
                       </div>
-                      <div className="overflow-x-auto">
-                          <table className="w-full text-left">
-                              <thead>
-                                  <tr className="border-b border-slate-100 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                      <th className="px-4 py-3">Internal Method</th>
-                                      <th className="px-4 py-3">Type</th>
-                                      <th className="px-4 py-3">Description</th>
-                                  </tr>
-                              </thead>
-                              <tbody>
-                                  <ApiRow name="startSession()" type="Async Promise" desc="Initializes PeerJS, requests wake lock, generates Short ID." />
-                                  <ApiRow name="transferFile()" type="Async Generator" desc="Main loop. Reads file blobs and pipes to DataConnection." />
-                                  <ApiRow name="enableKeepAlive()" type="Void" desc="Triggers hidden Audio element to prevent iOS Safari throttling." />
-                                  <ApiRow name="handleManifest()" type="Event Handler" desc="Sends JSON metadata (filename, size, type) to new peers." />
-                              </tbody>
-                          </table>
+                      <div>
+                          <div className="hidden md:grid md:grid-cols-[1fr,auto,2fr] gap-4 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400">
+                              <div>Internal Method</div>
+                              <div>Type</div>
+                              <div>Description</div>
+                          </div>
+                          <ApiRow name="startSession()" type="Async Promise" desc="Initializes PeerJS, requests wake lock, generates Short ID." />
+                          <ApiRow name="transferFile()" type="Async Generator" desc="Main loop. Reads file blobs and pipes to DataConnection." />
+                          <ApiRow name="enableKeepAlive()" type="Void" desc="Triggers hidden Audio element to prevent iOS Safari throttling." />
+                          <ApiRow name="handleManifest()" type="Event Handler" desc="Sends JSON metadata (filename, size, type) to new peers." />
                       </div>
                   </div>
 
@@ -585,21 +580,15 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2"><Layout size={18} /> Receiver.tsx</h3>
                           <span className="text-[10px] font-mono bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 px-2 py-1 rounded">Client Logic</span>
                       </div>
-                      <div className="overflow-x-auto">
-                          <table className="w-full text-left">
-                              <thead>
-                                  <tr className="border-b border-slate-100 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                      <th className="px-4 py-3">Internal Method</th>
-                                      <th className="px-4 py-3">Type</th>
-                                      <th className="px-4 py-3">Description</th>
-                                  </tr>
-                              </thead>
-                              <tbody>
-                                  <ApiRow name="handleIncomingData()" type="Listener" desc="Demultiplexes JSON signaling messages vs ArrayBuffer binary chunks." />
-                                  <ApiRow name="finalizeCurrentFile()" type="Void" desc="Merges chunk array into single Blob, triggers download, clears RAM." />
-                                  <ApiRow name="verifyPassword()" type="Async" desc="Sends cryptographic hash to Host for session unlock." />
-                              </tbody>
-                          </table>
+                      <div>
+                           <div className="hidden md:grid md:grid-cols-[1fr,auto,2fr] gap-4 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400">
+                              <div>Internal Method</div>
+                              <div>Type</div>
+                              <div>Description</div>
+                          </div>
+                          <ApiRow name="handleIncomingData()" type="Listener" desc="Demultiplexes JSON signaling messages vs ArrayBuffer binary chunks." />
+                          <ApiRow name="finalizeCurrentFile()" type="Void" desc="Merges chunk array into single Blob, triggers download, clears RAM." />
+                          <ApiRow name="verifyPassword()" type="Async" desc="Sends cryptographic hash to Host for session unlock." />
                       </div>
                   </div>
               </div>
