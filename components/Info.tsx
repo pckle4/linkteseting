@@ -23,14 +23,14 @@ const ArchitectureDiagram = () => {
     }, []);
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 relative min-h-[400px] flex flex-col items-center justify-center group w-full overflow-hidden">
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-4 md:p-8 border border-slate-200 dark:border-slate-800 relative min-h-[400px] flex flex-col items-center justify-center group w-full overflow-hidden">
             {/* Background Grid */}
             <div className="absolute inset-0 opacity-[0.03]" 
                 style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
             />
             
-            <div className="relative z-10 w-full max-w-2xl overflow-x-auto pb-4">
-                <div className="min-w-[500px] px-4">
+            <div className="relative z-10 w-full overflow-x-auto pb-4 custom-scrollbar">
+                <div className="min-w-[500px] px-4 mx-auto">
                     {/* Nodes */}
                     <div className="flex justify-between items-end mb-12 relative">
                         {/* Peer A */}
@@ -95,7 +95,7 @@ const ArchitectureDiagram = () => {
                     </div>
                 </div>
                 
-                <div className="text-center mt-4">
+                <div className="text-center mt-6 w-full px-4">
                     <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                         {step === 0 && "Step 1: Init"}
                         {step === 1 && "Step 2: Signaling (SDP Exchange)"}
@@ -117,46 +117,48 @@ const ArchitectureDiagram = () => {
 // 2. Handshake Sequence Diagram
 const HandshakeSequence = () => {
     return (
-        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 text-white font-mono text-xs relative overflow-x-auto">
-             <div className="min-w-[400px]">
-                <div className="flex justify-between mb-4 border-b border-slate-700 pb-2">
-                    <span className="text-indigo-400">HOST</span>
-                    <span className="text-slate-500">SIGNALING SERVER</span>
-                    <span className="text-emerald-400">PEER</span>
-                </div>
-                
-                <div className="space-y-4 relative">
-                    {/* Line */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2" />
+        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 text-white font-mono text-xs relative overflow-hidden group">
+            <div className="overflow-x-auto custom-scrollbar pb-2">
+                 <div className="min-w-[400px]">
+                    <div className="flex justify-between mb-4 border-b border-slate-700 pb-2">
+                        <span className="text-indigo-400">HOST</span>
+                        <span className="text-slate-500">SIGNALING SERVER</span>
+                        <span className="text-emerald-400">PEER</span>
+                    </div>
                     
-                    <div className="flex justify-between items-center group">
-                        <div className="w-1/3 text-right pr-4"><span className="bg-indigo-900/50 px-2 py-1 rounded text-indigo-300 border border-indigo-500/30">Connect</span></div>
-                        <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
-                        <div className="w-1/3 pl-4 opacity-50">...</div>
-                    </div>
+                    <div className="space-y-4 relative">
+                        {/* Line */}
+                        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2" />
+                        
+                        <div className="flex justify-between items-center group">
+                            <div className="w-1/3 text-right pr-4"><span className="bg-indigo-900/50 px-2 py-1 rounded text-indigo-300 border border-indigo-500/30">Connect</span></div>
+                            <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
+                            <div className="w-1/3 pl-4 opacity-50">...</div>
+                        </div>
 
-                    <div className="flex justify-between items-center group">
-                        <div className="w-1/3 text-right pr-4 opacity-50">...</div>
-                        <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
-                        <div className="w-1/3 pl-4"><span className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 border border-emerald-500/30">Connect</span></div>
-                    </div>
+                        <div className="flex justify-between items-center group">
+                            <div className="w-1/3 text-right pr-4 opacity-50">...</div>
+                            <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
+                            <div className="w-1/3 pl-4"><span className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 border border-emerald-500/30">Connect</span></div>
+                        </div>
 
-                    <div className="flex justify-between items-center relative group">
-                        <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-indigo-500/50" />
-                        <div className="w-1/3 text-right pr-4"><span className="text-amber-400">OFFER (SDP)</span> &rarr;</div>
-                        <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-amber-500 rounded-full mx-auto animate-pulse" /></div>
-                        <div className="w-1/3 pl-4 opacity-50">&rarr;</div>
-                    </div>
+                        <div className="flex justify-between items-center relative group">
+                            <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-indigo-500/50" />
+                            <div className="w-1/3 text-right pr-4"><span className="text-amber-400">OFFER (SDP)</span> &rarr;</div>
+                            <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-amber-500 rounded-full mx-auto animate-pulse" /></div>
+                            <div className="w-1/3 pl-4 opacity-50">&rarr;</div>
+                        </div>
 
-                    <div className="flex justify-between items-center relative group">
-                        <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-emerald-500/50" />
-                        <div className="w-1/3 text-right pr-4 opacity-50">&larr;</div>
-                        <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-emerald-500 rounded-full mx-auto animate-pulse" /></div>
-                        <div className="w-1/3 pl-4">&larr; <span className="text-amber-400">ANSWER (SDP)</span></div>
-                    </div>
+                        <div className="flex justify-between items-center relative group">
+                            <div className="absolute left-1/3 right-1/3 top-1/2 h-px bg-emerald-500/50" />
+                            <div className="w-1/3 text-right pr-4 opacity-50">&larr;</div>
+                            <div className="w-1/3 text-center z-10"><div className="w-3 h-3 bg-emerald-500 rounded-full mx-auto animate-pulse" /></div>
+                            <div className="w-1/3 pl-4">&larr; <span className="text-amber-400">ANSWER (SDP)</span></div>
+                        </div>
 
-                    <div className="flex justify-center py-4">
-                        <span className="bg-slate-800 border border-slate-600 px-3 py-1 rounded-full text-xs font-bold text-slate-300">P2P ESTABLISHED</span>
+                        <div className="flex justify-center py-4">
+                            <span className="bg-slate-800 border border-slate-600 px-3 py-1 rounded-full text-xs font-bold text-slate-300">P2P ESTABLISHED</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -219,7 +221,7 @@ const ChunkingSimulator = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 {/* Visualizer */}
                 <div className="space-y-6">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 overflow-x-auto custom-scrollbar pb-2">
                         <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex items-center justify-center relative shadow-inner shrink-0">
                             <FileCode className="text-slate-500" />
                             <div className="absolute -bottom-6 text-[10px] font-mono text-slate-500">SOURCE</div>
@@ -298,10 +300,10 @@ const CodeBlock: React.FC<{ code: string; label?: string }> = ({ code, label }) 
 );
 
 const ApiRow: React.FC<{ name: string; type: string; desc: string }> = ({ name, type, desc }) => (
-    <tr className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-        <td className="py-3 px-4 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">{name}</td>
-        <td className="py-3 px-4 font-mono text-xs text-pink-600 dark:text-pink-400 whitespace-nowrap">{type}</td>
-        <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">{desc}</td>
+    <tr className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group flex flex-col md:table-row">
+        <td className="py-2 md:py-3 px-4 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform border-b md:border-b-0 border-slate-100 dark:border-slate-800/50 md:table-cell">{name}</td>
+        <td className="py-1 md:py-3 px-4 font-mono text-xs text-pink-600 dark:text-pink-400 whitespace-nowrap md:table-cell">{type}</td>
+        <td className="py-2 md:py-3 px-4 text-sm text-slate-600 dark:text-slate-400 md:table-cell pb-4 md:pb-3">{desc}</td>
     </tr>
 );
 
