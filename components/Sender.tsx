@@ -3,7 +3,7 @@ import { peerService } from '../services/peerService';
 import { generateShortId, formatFileSize, cn, formatTimeRemaining, formatSpeed } from '../utils';
 import { Button } from './Button';
 import { FileIcon } from './FileIcon';
-import { Check, Copy, Trash2, Cloud, ArrowUpRight, Globe, Timer, Download, ChevronDown, ChevronUp, Share2, Settings, HardDrive, Lock, AlertTriangle, BarChart3, Activity, Plus, X, Zap, Infinity as InfinityIcon, ShieldCheck, Loader2, QrCode, MessageSquare, Send, Bell, Smartphone, FileText } from 'lucide-react';
+import { Check, Copy, Trash2, Cloud, ArrowUpRight, Globe, Timer, Download, ChevronDown, ChevronUp, Share2, Settings, HardDrive, Lock, AlertTriangle, BarChart3, Activity, Plus, X, Zap, Infinity as InfinityIcon, ShieldCheck, Loader2, QrCode, MessageSquare, Send, Bell, Smartphone, FileText, ArrowRight } from 'lucide-react';
 import { DataConnection } from 'peerjs';
 import { IncomingData, ProtocolMessage, TextMessage } from '../types';
 import QRCode from 'qrcode';
@@ -317,6 +317,13 @@ export const Sender: React.FC<SenderProps> = ({ onToast }) => {
                       <div className="inline-block px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700/50 text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Unlimited Size • Direct P2P</div>
                  </div>
              </label>
+             
+             <button 
+                onClick={() => window.location.hash = 'download'}
+                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm hover:shadow-md active:scale-95"
+             >
+                <Download size={18} /> Have a receive code? Click here
+             </button>
         </div>
       </div>
     );
