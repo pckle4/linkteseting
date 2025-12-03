@@ -1,0 +1,5 @@
+{
+  "name": "NW Share",
+  "description": "Secure, peer-to-peer file sharing directly in your browser. No servers, just direct links.",
+  "requestFramePermissions": []
+}
