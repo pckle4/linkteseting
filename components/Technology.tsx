@@ -5,7 +5,7 @@ import {
   Activity, Layers, ChevronDown, Split, 
   FileDigit, Monitor, FileCode, HardDrive, 
   Wifi, Binary, AlertTriangle, Server, Lock, FileJson,
-  Code
+  Code, Copy, Check
 } from 'lucide-react';
 import { Button } from './Button';
 import { cn } from '../utils';
@@ -44,36 +44,52 @@ const Highlight: React.FC<{ children: React.ReactNode; color?: string; tooltip?:
   </span>
 );
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ title, code, highlights = [] }) => (
-  <div className="bg-[#0f172a] rounded-xl overflow-hidden shadow-2xl border border-slate-800 my-6 font-mono text-xs md:text-sm group relative mx-auto w-full max-w-[90vw] md:max-w-none transform transition-transform hover:scale-[1.01] duration-500">
-    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
-        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Read-Only</div>
-    </div>
-    <div className="flex items-center justify-between px-4 py-3 bg-[#1e293b]/50 border-b border-slate-800">
-      <div className="flex items-center gap-2 min-w-0">
-        <FileCode size={14} className="text-blue-400 shrink-0" />
-        <span className="text-xs text-slate-400 font-medium truncate">{title}</span>
-      </div>
-      <div className="flex gap-1.5 shrink-0 ml-2">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50" />
-        <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/50" />
-        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/50" />
-      </div>
-    </div>
-    <div className="p-4 overflow-x-auto custom-scrollbar bg-[#0f172a]">
-      <pre className="leading-relaxed">
-        <code>
-          {code.split('\n').map((line, i) => (
-            <div key={i} className={cn("table-row transition-colors duration-300", highlights.includes(i + 1) ? "bg-indigo-500/10 w-full block -mx-4 px-4 border-l-2 border-indigo-500" : "")}>
-              <span className="table-cell select-none text-slate-700 text-right pr-4 w-6 md:w-8 border-r border-slate-800/50 mr-4 text-[10px] md:text-xs">{i + 1}</span>
-              <span className={cn("table-cell pl-4", highlights.includes(i + 1) ? "text-indigo-100 font-bold" : "text-slate-300")}>{line}</span>
+const CodeBlock: React.FC<CodeBlockProps> = ({ title, code, highlights = [] }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const copyCode = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-[#0f172a] rounded-xl overflow-hidden shadow-2xl border border-slate-800 my-6 font-mono text-xs md:text-sm group relative mx-auto w-full max-w-[95vw] md:max-w-none transform transition-transform hover:scale-[1.01] duration-500">
+      <div className="flex items-center justify-between px-4 py-3 bg-[#1e293b]/50 border-b border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileCode size={14} className="text-blue-400 shrink-0" />
+          <span className="text-xs text-slate-400 font-medium truncate">{title}</span>
+        </div>
+        <div className="flex items-center gap-3">
+            <button 
+                onClick={copyCode}
+                className="text-slate-500 hover:text-white transition-colors"
+                title="Copy code"
+            >
+                {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+            </button>
+            <div className="flex gap-1.5 shrink-0 hidden sm:flex">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/50" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/50" />
             </div>
-          ))}
-        </code>
-      </pre>
+        </div>
+      </div>
+      <div className="p-4 overflow-x-auto custom-scrollbar bg-[#0f172a]">
+        <pre className="leading-relaxed">
+          <code>
+            {code.split('\n').map((line, i) => (
+              <div key={i} className={cn("table-row transition-colors duration-300", highlights.includes(i + 1) ? "bg-indigo-500/10 w-full block -mx-4 px-4 border-l-2 border-indigo-500" : "")}>
+                <span className="table-cell select-none text-slate-700 text-right pr-4 w-6 md:w-8 border-r border-slate-800/50 mr-4 text-[10px] md:text-xs">{i + 1}</span>
+                <span className={cn("table-cell pl-4", highlights.includes(i + 1) ? "text-indigo-100 font-bold" : "text-slate-300")}>{line}</span>
+              </div>
+            ))}
+          </code>
+        </pre>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // --- Interactive Demos ---
 
