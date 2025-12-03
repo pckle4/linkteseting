@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, Cpu, Database, Network, Code, Layers, FileCode, 
@@ -23,15 +24,16 @@ const ArchitectureDiagram = () => {
     }, []);
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 relative min-h-[350px] flex flex-col items-center justify-center group w-full overflow-hidden">
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-4 md:p-6 border border-slate-200 dark:border-slate-800 relative min-h-[350px] flex flex-col items-center justify-center group w-full overflow-hidden">
             {/* Background Grid */}
             <div className="absolute inset-0 opacity-[0.03]" 
                 style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
             />
             
-            <div className="relative z-10 w-full overflow-x-auto pb-4 custom-scrollbar">
-                {/* Fixed width container to ensure diagram integrity */}
-                <div className="min-w-[500px] md:min-w-[600px] px-8 mx-auto pt-12">
+            {/* Scrollable Container for Diagram */}
+            <div className="relative z-10 w-full overflow-x-auto pb-6 custom-scrollbar">
+                {/* Fixed width inner container to preserve diagram geometry */}
+                <div className="min-w-[600px] px-8 mx-auto pt-12">
                     {/* Nodes */}
                     <div className="flex justify-between items-end mb-12 relative">
                         {/* Peer A */}
@@ -95,21 +97,21 @@ const ArchitectureDiagram = () => {
                         )}
                     </div>
                 </div>
-                
-                <div className="text-center mt-6 w-full px-4 min-w-[300px]">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                        {step === 0 && "Step 1: Init"}
-                        {step === 1 && "Step 2: Signaling (SDP Exchange)"}
-                        {step === 2 && "Step 3: ICE Candidate Check"}
-                        {step === 3 && "Step 4: P2P Data Tunnel (Active)"}
-                    </div>
-                    <p className="text-sm text-slate-400">
-                        {step === 0 && "Sender creates a specialized Offer."}
-                        {step === 1 && "Metadata is swapped via WebSocket."}
-                        {step === 2 && "Best network path is negotiated."}
-                        {step === 3 && "Direct, encrypted binary stream."}
-                    </p>
+            </div>
+            
+            <div className="text-center mt-6 w-full px-4 max-w-lg mx-auto">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    {step === 0 && "Step 1: Init"}
+                    {step === 1 && "Step 2: Signaling (SDP Exchange)"}
+                    {step === 2 && "Step 3: ICE Candidate Check"}
+                    {step === 3 && "Step 4: P2P Data Tunnel (Active)"}
                 </div>
+                <p className="text-sm text-slate-400">
+                    {step === 0 && "Sender creates a specialized Offer."}
+                    {step === 1 && "Metadata is swapped via WebSocket."}
+                    {step === 2 && "Best network path is negotiated."}
+                    {step === 3 && "Direct, encrypted binary stream."}
+                </p>
             </div>
         </div>
     );
@@ -118,17 +120,17 @@ const ArchitectureDiagram = () => {
 // 2. Handshake Sequence Diagram
 const HandshakeSequence = () => {
     return (
-        <div className="bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-800 text-white font-mono text-xs relative overflow-hidden group">
-            <div className="overflow-x-auto custom-scrollbar pb-2">
-                 <div className="min-w-[400px]">
+        <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 text-white font-mono text-xs relative overflow-hidden group">
+            <div className="overflow-x-auto custom-scrollbar pb-4">
+                 <div className="min-w-[500px] px-2">
                     <div className="flex justify-between mb-4 border-b border-slate-700 pb-2">
-                        <span className="text-indigo-400 font-bold">HOST</span>
-                        <span className="text-slate-500 font-bold">SIGNALING</span>
-                        <span className="text-emerald-400 font-bold">PEER</span>
+                        <span className="text-indigo-400 font-bold w-1/3">HOST</span>
+                        <span className="text-slate-500 font-bold w-1/3 text-center">SIGNALING</span>
+                        <span className="text-emerald-400 font-bold w-1/3 text-right">PEER</span>
                     </div>
                     
                     <div className="space-y-4 relative">
-                        {/* Line */}
+                        {/* Center Line */}
                         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2" />
                         
                         <div className="flex justify-between items-center group">
@@ -140,7 +142,7 @@ const HandshakeSequence = () => {
                         <div className="flex justify-between items-center group">
                             <div className="w-1/3 text-right pr-4 opacity-50">...</div>
                             <div className="w-1/3 text-center z-10"><div className="w-2 h-2 bg-slate-600 rounded-full mx-auto" /></div>
-                            <div className="w-1/3 pl-4"><span className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 border border-emerald-500/30">Connect</span></div>
+                            <div className="w-1/3 text-right pl-4 flex justify-end"><span className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 border border-emerald-500/30">Connect</span></div>
                         </div>
 
                         <div className="flex justify-between items-center relative group">
@@ -205,12 +207,12 @@ const ChunkingSimulator = () => {
     };
 
     return (
-        <div className="bg-slate-900 text-white rounded-3xl p-4 md:p-8 border border-slate-800 shadow-2xl group hover:border-slate-700 transition-colors w-full">
+        <div className="bg-slate-900 text-white rounded-3xl p-4 md:p-6 border border-slate-800 shadow-2xl group hover:border-slate-700 transition-colors w-full overflow-hidden">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 shrink-0"><Cpu size={20} /></div>
                     <div className="min-w-0">
-                        <h3 className="font-bold truncate">Chunking Engine</h3>
+                        <h3 className="font-bold truncate text-sm md:text-base">Chunking Engine</h3>
                         <div className="text-[10px] text-slate-400 font-mono truncate">MODE: {isRunning ? 'ACTIVE' : 'IDLE'}</div>
                     </div>
                 </div>
@@ -219,23 +221,23 @@ const ChunkingSimulator = () => {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Visualizer */}
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4 overflow-x-auto custom-scrollbar pb-4">
-                        <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex items-center justify-center relative shadow-inner shrink-0">
+                <div className="space-y-6 min-w-0">
+                    <div className="flex items-center gap-2 md:gap-4 overflow-x-auto custom-scrollbar pb-4 pt-2">
+                        <div className="w-14 h-16 md:w-16 md:h-20 border-2 border-slate-700 rounded bg-slate-800 flex items-center justify-center relative shadow-inner shrink-0">
                             <FileCode className="text-slate-500" />
                             <div className="absolute -bottom-6 text-[10px] font-mono text-slate-500">SOURCE</div>
                         </div>
                         
                         {/* Stream Animation */}
-                        <div className="flex-1 h-12 bg-slate-800/50 rounded-lg border border-slate-700/50 relative overflow-hidden flex items-center px-2 gap-2 shadow-inner min-w-[120px]">
+                        <div className="flex-1 h-10 md:h-12 bg-slate-800/50 rounded-lg border border-slate-700/50 relative overflow-hidden flex items-center px-2 gap-2 shadow-inner min-w-[100px]">
                              {chunks.map((_, i) => (
-                                 <div key={i} className="w-6 h-8 bg-indigo-500 rounded shadow-lg animate-slide-right shrink-0" />
+                                 <div key={i} className="w-4 md:w-6 h-6 md:h-8 bg-indigo-500 rounded shadow-lg animate-slide-right shrink-0" />
                              ))}
                         </div>
 
-                        <div className="w-16 h-20 border-2 border-slate-700 rounded bg-slate-800 flex flex-col justify-end relative overflow-hidden shadow-inner shrink-0">
+                        <div className="w-14 h-16 md:w-16 md:h-20 border-2 border-slate-700 rounded bg-slate-800 flex flex-col justify-end relative overflow-hidden shadow-inner shrink-0">
                              <div 
                                 className={cn("w-full transition-all duration-200 opacity-80", getBufferColor(buffer))}
                                 style={{ height: `${buffer}%` }}
@@ -279,7 +281,7 @@ const ChunkingSimulator = () => {
 // --- API & DOCS COMPONENTS ---
 
 const DocSection: React.FC<{ id: string; title: string; children: React.ReactNode }> = ({ id, title, children }) => (
-    <section id={id} className="mb-16 scroll-mt-32">
+    <section id={id} className="mb-12 md:mb-16 scroll-mt-28 md:scroll-mt-32 w-full max-w-full">
         <div className="flex items-center gap-2 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
             <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight break-words">{title}</h2>
         </div>
@@ -288,7 +290,7 @@ const DocSection: React.FC<{ id: string; title: string; children: React.ReactNod
 );
 
 const CodeBlock: React.FC<{ code: string; label?: string }> = ({ code, label }) => (
-    <div className="my-6 rounded-xl overflow-hidden bg-[#0f172a] border border-slate-800 text-sm font-mono shadow-xl group hover:border-slate-700 transition-colors w-full max-w-[90vw] md:max-w-none">
+    <div className="my-6 rounded-xl overflow-hidden bg-[#0f172a] border border-slate-800 text-sm font-mono shadow-xl group hover:border-slate-700 transition-colors w-full">
         {label && (
             <div className="px-4 py-2 bg-slate-800/50 border-b border-slate-800 text-xs text-slate-400 font-bold flex items-center gap-2">
                 <FileCode size={12} /> {label}
@@ -302,7 +304,7 @@ const CodeBlock: React.FC<{ code: string; label?: string }> = ({ code, label }) 
 
 const ApiRow: React.FC<{ name: string; type: string; desc: string }> = ({ name, type, desc }) => (
     <div className="flex flex-col md:grid md:grid-cols-[1fr,auto,2fr] gap-2 md:gap-4 p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-        <div className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 break-words md:break-normal">{name}</div>
+        <div className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 break-words">{name}</div>
         <div className="font-mono text-[10px] md:text-xs text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/10 px-2 py-0.5 rounded w-fit h-fit">{type}</div>
         <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{desc}</div>
     </div>
@@ -425,7 +427,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 p-4 md:p-12 overflow-x-hidden min-w-0">
+      <main className="flex-1 w-full min-w-0 p-4 md:p-12 overflow-x-hidden">
           
           {/* 1. OVERVIEW */}
           <DocSection id="overview" title="Executive Summary">
@@ -474,7 +476,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
           {/* 3. CHUNKING ENGINE */}
           <DocSection id="chunking" title="The Chunking Engine">
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12">
                   <div>
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Memory Management Strategy</h3>
                       <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed">
@@ -521,7 +523,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 }`} 
                       />
                   </div>
-                  <div className="w-full overflow-hidden">
+                  <div className="w-full">
                        <ChunkingSimulator />
                   </div>
               </div>
@@ -529,7 +531,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
           {/* 4. SIGNALING PROTOCOL */}
           <DocSection id="protocol" title="Signaling Protocol">
-             <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12">
                  <div>
                      <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed">
                          The handshake process involves exchanging "Offers" and "Answers" that contain Session Description Protocol (SDP) data. This allows two browsers to agree on codecs, encryption keys, and network addresses before a direct line exists.
@@ -556,7 +558,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
           {/* 5. API REFERENCE */}
           <DocSection id="components" title="Component API Reference">
-              <div className="space-y-12">
+              <div className="space-y-8 md:space-y-12">
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
                       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
                           <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2"><Layout size={18} /> Sender.tsx</h3>
@@ -617,7 +619,7 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
           {/* 7. FAILURE ANALYSIS */}
           <DocSection id="troubleshooting" title="Failure Analysis">
-              <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800">
+              <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-800">
                   <h4 className="font-bold text-slate-900 dark:text-white mb-6">Common Error Decision Tree</h4>
                   
                   <div className="space-y-8 relative">
