@@ -276,7 +276,7 @@ const ChunkingSimulator = () => {
 // --- API & DOCS COMPONENTS ---
 
 const DocSection: React.FC<{ id: string; title: string; children: React.ReactNode }> = ({ id, title, children }) => (
-    <section id={id} className="mb-16 scroll-mt-28">
+    <section id={id} className="mb-16 scroll-mt-32">
         <div className="flex items-center gap-2 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
             <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
         </div>
@@ -285,8 +285,12 @@ const DocSection: React.FC<{ id: string; title: string; children: React.ReactNod
 );
 
 const CodeBlock: React.FC<{ code: string; label?: string }> = ({ code, label }) => (
-    <div className="my-6 rounded-xl overflow-hidden bg-[#0d1117] border border-slate-800 text-sm font-mono shadow-lg group hover:border-slate-600 transition-colors">
-        {label && <div className="px-4 py-2 bg-slate-800/50 border-b border-slate-800 text-xs text-slate-400 font-bold flex items-center gap-2"><FileCode size={12} /> {label}</div>}
+    <div className="my-6 rounded-xl overflow-hidden bg-[#0f172a] border border-slate-800 text-sm font-mono shadow-xl group hover:border-slate-700 transition-colors">
+        {label && (
+            <div className="px-4 py-2 bg-slate-800/50 border-b border-slate-800 text-xs text-slate-400 font-bold flex items-center gap-2">
+                <FileCode size={12} /> {label}
+            </div>
+        )}
         <div className="p-4 overflow-x-auto text-slate-300 custom-scrollbar">
             <pre><code>{code}</code></pre>
         </div>
@@ -344,11 +348,11 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   ];
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto animate-fade-in flex flex-col lg:flex-row min-h-screen bg-slate-50 dark:bg-[#0B0F19]">
+    <div className="w-full max-w-[1600px] mx-auto animate-fade-in flex flex-col lg:flex-row min-h-screen items-start bg-slate-50 dark:bg-[#0B0F19]">
       
       {/* --- SIDEBAR NAVIGATION (Desktop) --- */}
-      <aside className="hidden lg:block w-72 shrink-0 relative self-start sticky top-28">
-          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm ml-6 my-6 flex flex-col">
+      <aside className="hidden lg:block w-72 shrink-0 sticky top-28 self-start mb-8">
+          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm ml-6 flex flex-col">
              <div className="p-6">
                  <div className="flex items-center gap-2 font-black text-xl text-slate-900 dark:text-white tracking-tight mb-8">
                     <Terminal className="text-indigo-500" /> NW<span className="text-slate-400">Docs</span>
@@ -393,22 +397,27 @@ export const Info: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
           <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-             <span className="font-bold text-lg">Documentation</span>
-             <button onClick={() => setMobileMenuOpen(false)}><X /></button>
+             <span className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2"><Terminal className="text-indigo-500" size={20} /> Docs</span>
+             <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><X size={20} /></button>
           </div>
           <div className="p-4 flex-1 overflow-y-auto">
              {navItems.map(item => (
-                 <button key={item.id} onClick={() => scrollTo(item.id)} className="w-full flex items-center gap-3 px-4 py-4 border-b border-slate-100 dark:border-slate-800 text-sm font-medium text-left">
+                 <button key={item.id} onClick={() => scrollTo(item.id)} className="w-full flex items-center gap-3 px-4 py-4 border-b border-slate-100 dark:border-slate-800 text-sm font-medium text-left text-slate-700 dark:text-slate-300">
                      <item.icon size={18} className="text-slate-400" /> {item.label}
                  </button>
              ))}
+          </div>
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+             <Button onClick={onBack} variant="ghost" className="w-full justify-center gap-2 text-slate-600 dark:text-slate-400">
+                 <ArrowLeft size={18} /> Back to App
+             </Button>
           </div>
       </div>
 
       {/* --- MOBILE FAB --- */}
       <div className="lg:hidden fixed bottom-6 right-6 z-40">
-          <button onClick={() => setMobileMenuOpen(true)} className="w-14 h-14 bg-indigo-600 rounded-full text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform">
-              <Menu />
+          <button onClick={() => setMobileMenuOpen(true)} className="w-14 h-14 bg-indigo-600 rounded-full text-white shadow-xl shadow-indigo-600/30 flex items-center justify-center active:scale-95 transition-transform hover:scale-105">
+              <Menu size={24} />
           </button>
       </div>
 
