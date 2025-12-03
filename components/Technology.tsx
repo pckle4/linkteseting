@@ -152,7 +152,7 @@ const ChunkingVisualizer = () => {
                         "w-8 h-8 rounded-full flex items-center justify-center text-[8px] font-bold text-white transition-all duration-500 absolute shadow-sm",
                         activeChunk === i ? "opacity-100 translate-x-[200px] scale-100 bg-indigo-500" : "opacity-0 translate-x-0 scale-50 bg-slate-300"
                     )}
-                    style={{ left: `${i * 10}px` }}
+                    style={{ left: `${i * 15}%` }}
                 >
                     64KB
                 </div>
@@ -203,14 +203,14 @@ const ProtocolVisualizer = () => {
                 ))}
             </div>
 
-            <div className="bg-black/30 rounded-xl p-4 md:p-6 min-h-[160px] flex items-center justify-center relative border border-white/5 transition-all duration-500">
+            <div className="bg-black/30 rounded-xl p-4 md:p-6 min-h-[160px] flex items-center justify-center relative border border-white/5 transition-all duration-500 overflow-hidden">
                 {step === 1 && (
-                    <div className="flex items-center justify-between w-full max-w-lg gap-2 md:gap-8 animate-fade-in">
+                    <div className="flex items-center justify-between w-full max-w-lg gap-2 md:gap-8 animate-fade-in overflow-x-auto">
                         <div className="text-center shrink-0">
                             <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-2"><Monitor size={18} /></div>
                             <div className="text-[10px] md:text-xs font-bold">Peer A</div>
                         </div>
-                        <div className="flex-1 flex flex-col items-center min-w-0">
+                        <div className="flex-1 flex flex-col items-center min-w-[120px]">
                              <div className="text-[8px] md:text-[10px] text-indigo-400 mb-1 font-mono truncate animate-pulse">Offer (SDP)</div>
                              <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent relative">
                                  <div className="absolute -top-1 left-1/2 w-2 h-2 bg-indigo-400 rounded-full animate-ping" />
@@ -355,16 +355,18 @@ export const Technology: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  </div>
              </div>
              <div className="order-1 lg:order-2 bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-800 shadow-2xl transform rotate-2 hover:rotate-0 transition-transform duration-500 group cursor-default">
-                 <div className="font-mono text-xs md:text-sm text-slate-300">
-                     <div className="flex gap-2 mb-4 opacity-50"><span className="text-blue-400">const</span> file = <span className="text-yellow-400">new</span> File(["..."], "huge.mp4");</div>
-                     <div className="relative">
-                        <div className="absolute -left-4 top-0 bottom-0 w-1 bg-red-500/50"></div>
-                        <span className="text-slate-500">// ❌ BAD: Loads 10GB into RAM</span><br/>
-                        <span className="text-purple-400">await</span> file.arrayBuffer(); 
-                     </div>
-                     <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[10px] md:text-xs group-hover:bg-red-500/20 transition-colors">
-                         Uncaught RangeError: Array buffer allocation failed<br/>
-                         at File.arrayBuffer (native)
+                 <div className="font-mono text-xs md:text-sm text-slate-300 overflow-x-auto custom-scrollbar pb-2">
+                     <div className="min-w-[300px]">
+                        <div className="flex gap-2 mb-4 opacity-50"><span className="text-blue-400">const</span> file = <span className="text-yellow-400">new</span> File(["..."], "huge.mp4");</div>
+                        <div className="relative">
+                            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-red-500/50"></div>
+                            <span className="text-slate-500">// ❌ BAD: Loads 10GB into RAM</span><br/>
+                            <span className="text-purple-400">await</span> file.arrayBuffer(); 
+                        </div>
+                        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[10px] md:text-xs group-hover:bg-red-500/20 transition-colors">
+                            Uncaught RangeError: Array buffer allocation failed<br/>
+                            at File.arrayBuffer (native)
+                        </div>
                      </div>
                  </div>
              </div>
